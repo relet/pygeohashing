@@ -7,28 +7,63 @@ RE_USER = re.compile('\[\[[Uu]ser ?: ?(.*?) ?[\|\]]')
 RE_LISTED = re.compile(' *[\*#] *(.+?)\W')
 RE_RIBBONBEARER = re.compile('\{\{.*?name ?= ?(.*?) ?[\|\}]')
 
+def fuzzyadd(a,b): #combine two fuzzy values
+  return (a+b)/2.0
+  #return sqrt(a*a+b*b)
+
+debug_fuzz = None
+def getDebugFuzz():
+  global debug_fuzz
+  return debug_fuzz
+
 def identifyParticipants(text, page):
+  global debug_fuzz
+  fuzzy = {} #user id -> probability of being a participant
   sections = getSection(text, ("participant", "participants", "people", "participant?", "participants?", "people?"))
-  linked = []
   if sections:
     linked = RE_USER.findall(sections)
+    for part in linked:
+      fuzzy[part]=5.0; 
     if not linked:
       #extract non user:-linked users from a list of participants
       linked = RE_LISTED.findall(sections)
+      for part in linked:
+        fuzzy[part]=0.5;
   else:
     linked = RE_USER.findall(text)
-  if not linked:
-    #extract all named users from ribbons on the page
-    linked = RE_RIBBONBEARER.findall(text)
-  if not linked:
+    for part in linked:
+      fuzzy[part]=1.0;
+
+  mentions = {}
+  mcount   = 0.0
+  for p in fuzzy.keys():
+    mentions[p] = len(re.findall(p, text, re.IGNORECASE))
+    mcount += mentions[p]
+  if mcount>0:
+    for p,v in mentions.items():
+      #print p,v*v/mcount
+      fuzzy[p]=fuzzyadd(fuzzy[p],v*v/mcount)
+
+  #identify all ribbon bearers
+  linked = RE_RIBBONBEARER.findall(text)
+  for part in linked:
+    fuzzy[part]=fuzzyadd(fuzzy.get(part,0),1);
+
+  if len(fuzzy)==0: #only if we still don't have fuzz
     history = page.getVersionHistory()
     #compare the edit history with the page content
     editors = [change[2] for change in history]
     for editor in editors:
       if editor.lower() in text.lower():
-        linked.append(editor)
-  map(string.strip, linked)
-  return linked
+        fuzzy[editor]=1.0
+
+  participants = []
+  for p,v in fuzzy.items():
+    if v>1:
+      participants.append(p)
+
+  debug_fuzz = fuzzy
+  return participants
   
 def getUsers(page):
   """
