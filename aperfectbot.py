@@ -1,7 +1,10 @@
+import sys
+sys.path
+
 import wikipedia
 import re
 import string
-#import GraticuleDatabase
+import GraticuleDatabase
 import sys
 import category
 import datetime
@@ -16,112 +19,6 @@ import time
 #  ccodes[data[1]]=data[0]
 
 # site = wikipedia.getSite()
-
-def inc(num):
- if num == "-0":
-   return "0"
- if num=="179":
-   return "-179"
- elif num == "-1":
-   return "-0"
- else:
-   return(str(int(num)+1))
-
-def dec(num):
- if num=="-179":
-   return "179"
- elif num=="0":
-   return "-0"
- else:
-   return(str(int(num)-1))
-
-class GraticuleDatabase:
-   '''
-   This is a hashtable of graticules indexed lat->lon->(page, name, country)
-   '''
-   def __init__(self, site):
-     page = wikipedia.Page(site, u"All Graticules")
-     text = page.get(get_redirect = False)
-
-     self.data = {}
-     result = re_grat.findall(text)
-     for match in result:
-       page, grat = match
-       lat, lon = grat.split(", ")
-       if not lat in self.data:
-         self.data[lat]={}
-       if grat in page:
-         name = page
-         country = reduce(lambda x,y:x+" "+y, page.split(" ")[0:-2])
-       elif "," in page:
-         cut = page.split(", ")
-         name = cut[0]
-         country = cut[-1]
-       else:
-         name = page
-         country = None
-       self.data[lat][lon] = (page, name, country)
-
-   def dump(self, filename):
-     yamldump = open(filename,'w')          # store the data set we have last been working on
-#     yamldump.write(yaml.dump(self.data))   # in order to quickly identify changes in the future.
-     yamldump.close()
-
-   def getLatLon(self, lat, lon):
-     try:
-       return self.data[lat][lon]
-     except:
-       return None
-
-   def getAllKeys(self):
-     all = []
-     for lat in self.data.keys():
-       for lon in self.data[lat].keys():
-         all.append((lat,lon))
-     return all
-
-   def getAllWaterKeys(self):
-     all = []
-     for lat in self.data.keys():
-       for lon in self.data[lat].keys():
-         if lat+", "+lon in self.data[lat][lon][0]:
-           all.append((lat,lon))
-     return all
-
-   def gratlink(self, lat, lon, refcountry = None):
-     entry = self.getLatLon(lat, lon)
-     if entry:
-       page, name, country = entry
-       link = page
-       if country == refcountry:
-         title = name.strip()
-       elif country:
-         title = name+", "+country.strip()
-       else:
-         title = name.strip()
-       if lat in page:
-         title = (page.split(lat)[0]).strip()
-       if link == title:
-         return "[[%s]]" % link
-       else:
-         return "[[%s|%s]]" % (link, title)
-     else:
-       return "[[%s,%s]]" % (lat, lon)
-
-
-   def getTemplate(self, lat, lon, refcountry):
-     str = u'{{graticule\n   | map = <map lat="%s" lon="%s" />\n' % (lat,lon)
-     str += "   | nw = %s\n" % self.gratlink(inc(lat),dec(lon),refcountry)
-     str += "   | n  = %s\n" % self.gratlink(inc(lat),lon,refcountry)
-     str += "   | ne = %s\n" % self.gratlink(inc(lat),inc(lon),refcountry)
-     str += "   | w  = %s\n" % self.gratlink(lat,dec(lon),refcountry)
-     str += "   | name = %s\n" % self.gratlink(lat,lon,refcountry)
-     str += "   | e  = %s\n" % self.gratlink(lat,inc(lon),refcountry)
-     str += "   | sw = %s\n" % self.gratlink(dec(lat),dec(lon),refcountry)
-     str += "   | s  = %s\n" % self.gratlink(dec(lat),lon,refcountry)
-     str += "   | se = %s\n" % self.gratlink(dec(lat),inc(lon),refcountry)
-     str += "}}"
-     return str
 
 # You must pass a date after the last available one
 def get_last_day_avail(date):
@@ -209,7 +106,8 @@ def main():
 
     enwiktsite = wikipedia.getSite('en', 'geohashing') # loading a defined project's page
 
-    db = GraticuleDatabase(enwiktsite)
+    db = GraticuleDatabase.GraticuleDatabase()
+#    db = GraticuleDatabase.GraticuleDatabase(site = enwiktsite)
     all = db.getAllKeys()
 
     catdb = category.CategoryDatabase()
