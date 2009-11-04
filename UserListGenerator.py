@@ -5,7 +5,8 @@ import wikipedia, re, string
 
 RE_USER = re.compile('\[\[[Uu]ser ?: ?(.*?) ?[\|\]]')
 RE_LISTED = re.compile(' *[\*#] *(.+?)\W')
-RE_RIBBONBEARER = re.compile('\{\{.*?name ?= ?(?:\[\[[Uu]ser:)?(.*?) ?[\|\}]')
+RE_RIBBONBEARER = re.compile('\{\{.*?name ?= ?(?:\[\[[Uu]ser:)? ?(.*?) ?[\|\}]')
+RE_CARDRECIPIENT = re.compile('recipient ?= ?(?:\[\[[Uu]ser:)? ?(.*?) ?[\|\}]')
 
 improbablenames = ["and", "i", "we"]
 
@@ -31,38 +32,45 @@ def normalize(dic):
 def unscorify(word):
   return word.replace("_"," ")
 
+def splitgrouped(word):
+  return re.split(",| and |&", word)
+
 def identifyParticipants(text, page):
   global debug_fuzz
   fuzzy = {} #user id -> probability of being a participant
+  text = unscorify(text)
 
   if "[[Category:Not reached - Did not attempt]]" in text:
     return []
 
   sections = getSectionRegex(text, "(participants?|(the )?people|attendees?|adventurers?)\??", "true")
   if sections:
-    linked = map(unscorify, RE_USER.findall(sections))
+    linked = RE_USER.findall(sections)
     linkedusers = linked
     for part in linked:
       fuzzy[part]=10.0; 
     #extract non user:-linked users from a list of participants
-    listed = map(unscorify, RE_LISTED.findall(sections))
+    listed = RE_LISTED.findall(sections)
     for part in listed:
       if not "[" in part: 
         fuzzy[part]=10.0;
   else:
-    linked = map(unscorify,RE_USER.findall(text))
+    linked = RE_USER.findall(text)
     for part in linked:
       fuzzy[part]=fuzzy.get(part,0)+1.0;
 
   #identify all ribbon bearers
-  ribboned = map(unscorify,RE_RIBBONBEARER.findall(text))
+  ribboned = RE_RIBBONBEARER.findall(text)
   for part in ribboned:
-    part = part.split(",")
+    part = splitgrouped(part)
     for ppart in part:
-      ppart = ppart.split(" and ")    
-      for pppart in ppart:
-        pppart = pppart.strip()
-        fuzzy[pppart]=fuzzyadd(fuzzy.get(pppart,1),5);
+      fuzzy[ppart]=fuzzyadd(fuzzy.get(ppart,1),5);
+  #identify all hashcard recipients
+  ribboned = RE_CARDRECIPIENT.findall(text)
+  for part in ribboned:
+    part = splitgrouped(part)
+    for ppart in part:
+      fuzzy[ppart]=fuzzyadd(fuzzy.get(ppart,1),-5);
 
   #increase the score of a potential participant by the number of mentions¹ vs total mentions 
   mentions = {}
