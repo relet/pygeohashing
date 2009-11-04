@@ -41,11 +41,12 @@ def identifyParticipants(text, page):
   sections = getSectionRegex(text, "(participants?|(the )?people|attendees?|adventurers?)\??", "true")
   if sections:
     linked = map(unscorify, RE_USER.findall(sections))
+    linkedusers = linked
     for part in linked:
       fuzzy[part]=10.0; 
     #extract non user:-linked users from a list of participants
-    linked = map(unscorify, RE_LISTED.findall(sections))
-    for part in linked:
+    listed = map(unscorify, RE_LISTED.findall(sections))
+    for part in listed:
       if not "[" in part: 
         fuzzy[part]=10.0;
   else:
@@ -54,8 +55,8 @@ def identifyParticipants(text, page):
       fuzzy[part]=fuzzy.get(part,0)+1.0;
 
   #identify all ribbon bearers
-  linked = map(unscorify,RE_RIBBONBEARER.findall(text))
-  for part in linked:
+  ribboned = map(unscorify,RE_RIBBONBEARER.findall(text))
+  for part in ribboned:
     part = part.split(",")
     for ppart in part:
       ppart = ppart.split(" and ")    
@@ -68,10 +69,13 @@ def identifyParticipants(text, page):
   mcount   = 0.0
   for p in fuzzy.keys():
     mentions[p] = len(re.findall(re.escape(p), text, re.IGNORECASE))
-    mcount += mentions[p]
+    mcount += mentions[p] 
+  for p in linked: # then subtract one for every linked user (they are "mentioned" twice)
+    if p in mentions:
+      mentions[p] -= 1
+      mcount -= 1
   if mcount>0:
     for p,v in mentions.items():
-      #print p,v*v/mcount
       fuzzy[p]=fuzzyadd(fuzzy[p],v*v/mcount)
 
   if len(fuzzy)==0: #only if we still don't have fuzz
