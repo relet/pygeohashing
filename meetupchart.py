@@ -11,6 +11,7 @@ import datetime, wikipedia, re, sys, yaml
 from random import random
 from catlib import Category
 from UserListGenerator import getSection, identifyParticipants, getDebugFuzz
+from GraticuleDatabase import GraticuleDatabase
 
 DATEFORMAT = "%Y-%m-%d"
 RE_EXP  = re.compile("^\d{4}-\d{2}-\d{2} -?\d{1,3} -?\d{1,3}$")
@@ -18,6 +19,8 @@ RE_EXP  = re.compile("^\d{4}-\d{2}-\d{2} -?\d{1,3} -?\d{1,3}$")
 ROW  = 10
 COL  = 5 
 FONT = 10
+LEFTMARGIN = 300
+RIGHTMARGIN = 50
 MIN_EXPEDITIONS = 5
 
 def dump(filename, data):
@@ -55,6 +58,12 @@ def resortPlacesByDistance(places):
     if len(last)>5:
       last.pop(0)
   return resorted
+
+graticules = GraticuleDatabase()
+
+def gratName(place):
+  lat, lon = place.split(" ")
+  return graticules.getLatLon(lat, lon)[0]
     
 site = wikipedia.getSite()
 
@@ -114,10 +123,11 @@ for event in data:
   peop, date, grat = event
   if date < "2008-05":
     continue
-  if peop.lower().strip() in people:
-    people[peop.lower().strip()].append(event)
+  peop = peop.lower().strip().replace("_"," ")
+  if peop in people:
+    people[peop].append(event)
   else:
-    people[peop.lower()]=[event]
+    people[peop]=[event]
   if not grat in places:
     places.append(grat)
   if date<earliest:
@@ -140,15 +150,41 @@ def xy (day, place):
   global earliest, places, DATEFORMAT
   
   days = (datetime.datetime.strptime(day, DATEFORMAT) - datetime.datetime.strptime(earliest, DATEFORMAT)).days
-  return (50+days * COL, ROW+places.index(place) * ROW)
+  return (LEFTMARGIN+days * COL, ROW+places.index(place) * ROW)
   
-print("size(%i,%i)" % (100+duration * COL, ROW+girth*ROW))
+w,h = LEFTMARGIN+RIGHTMARGIN+duration * COL, ROW+girth*ROW
+  
+print("size(%i,%i)" % (w,h))
 print("nofill()")
 print("stroke(0)")
 print("font('NotCourier-sans', %i)" % (FONT))
 
 for place in places:
   print("text(\"%s\", 5, %i)" % (place, xy(earliest, place)[1]+4))
+
+print("stroke(.7,.7,.7)")
+print("strokewidth(.5)")
+day = datetime.datetime.strptime(earliest, DATEFORMAT)
+while day <= datetime.datetime.strptime(latest, DATEFORMAT):
+  if day.day == 1:
+    x,y = xy(datetime.datetime.strftime(day, DATEFORMAT), places[0])
+    print("text(\"%s/%s\",%i,%i)" % (str(day.month), str(day.year), x+3-COL/2, 10))
+    print("beginpath(%i,%i)" % (x-COL/2, 0))
+    print("lineto(%i,%i)" % (x-COL/2, h))
+    print("endpath()")
+  day += datetime.timedelta(1)
+
+print("stroke(.7,.7,.7)")
+for i,place in enumerate(places):
+  x,y = xy(earliest, place)
+  print("text(\"%s\", 50, %i)" % (gratName(place).encode("utf-8"),y+4))
+  if i>0 and distance(places[i],places[i-1]) > 30: # draw horizontal separators between far-away graticules
+    print("beginpath(%i,%i)" % (LEFTMARGIN, y-ROW/2))
+    print("lineto(%i,%i)" % (w, y-ROW/2))
+    print("endpath()")
+
+print("strokewidth(1.2)")
+
    
 for peop in people.keys():
   events = people[peop]
