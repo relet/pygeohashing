@@ -33,16 +33,16 @@ def identifyParticipants(text, page):
   if "[[Category:Not reached - Did not attempt]]" in text:
     return []
 
-  sections = getSection(text, ("participant", "participants", "people", "participant?", "participants?", "people?", "attendees", "attendees?"))
+  sections = getSection(text, ("participant", "participants", "people", "participant?", "participants?", "people?", "attendees", "attendees?", "the people"))
   if sections:
     linked = RE_USER.findall(sections)
     for part in linked:
       fuzzy[part]=10.0; 
-    if not linked:
-      #extract non user:-linked users from a list of participants
-      linked = RE_LISTED.findall(sections)
-      for part in linked:
-        fuzzy[part]=1.0;
+    #extract non user:-linked users from a list of participants
+    linked = RE_LISTED.findall(sections)
+    for part in linked:
+      if not "[" in part: 
+        fuzzy[part]=10.0;
   else:
     linked = RE_USER.findall(text)
     for part in linked:
@@ -117,19 +117,7 @@ ingredients: one wikipedia.Page object
   return peopleText
 
 def getSections(text):
-   splitText = re.split("\n", text)
-   minlen = 99
-   for line in splitText:
-       match = re.match("\s*=+", line)
-       if ((match != None) and (len(string.strip(match.group(0))) < minlen)):
-           minlen = len(string.strip(match.group(0)))
-
-   equal_str = u""
-   for i in range(0,minlen):
-       equal_str += u"="
-   match_str = u"\n\s*" + equal_str + "([^=]*?)" + equal_str
-
-   text_arr = re.split(match_str, text)
+   text_arr = re.split("=+(.*?)=+", text)
    for i in range(0,len(text_arr)):
        text_arr[i] = string.strip(text_arr[i])
 
@@ -137,7 +125,8 @@ def getSections(text):
    section_hash[""] = text_arr[0]
 
    for i in range(1,len(text_arr),2):
-       section_hash[string.lower(text_arr[i])] = text_arr[i+1]
+     title = string.lower(text_arr[i])
+     section_hash[title] = section_hash.get(title,"") + text_arr[i+1]
 
    return section_hash
 
@@ -148,11 +137,14 @@ The search is case insensitive, and returns the first match, starting from name_
 It will return the body of the appropriate section, or None if there were no matches for the section name.
   """
   sections = getSections(text)
+  code = ""
   for header in name_arr:
-      if(header in sections):
-          return sections[header]
+      if header in sections:
+          code += sections[header] +"\n"
   if ((len(name_arr) == 0) and ("" in sections)):
       return sections[""]
+  if len(code)>0:
+    return code
   return None
 
 def getUserUist(text):
