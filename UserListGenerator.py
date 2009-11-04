@@ -163,6 +163,20 @@ It will return the body of the appropriate section, or None if there were no mat
     return code
   return None
 
+def get_section_regex(text, regex_text):
+  """
+This will look for a section with a name that matches the regex_text
+It will return the body of the appropriate section, or None if there were no matches for the section name.
+  """
+    sections = get_sections(text)
+    if ((regex_text == None) and ("" in sections)):
+        return sections[""]
+    else:
+        for keys in sections.keys():
+            if(re.match(regex_text, keys)):
+                return sections[keys]
+    return None
+
 def getUserUist(text):
   """This will look for all unique user tags on a page, and make a list out of them."""
   regex_res = re.findall("\[\[User:.*?\]\]", text, re.I)
