@@ -1,17 +1,12 @@
 import sys
 sys.path
 
-import wikipedia
-import re
-import string
+import wikipedia, re, string
 import GraticuleDatabase
-import sys
-import category
-import datetime
-import hashlib
-import struct
-import urllib
+import sys, category, datetime
+import hashlib, struct, urllib
 import time
+from UserListGenerator import *
 
 #ccodes  = {}
 #for line in open("countryCodes.txt","r"):
@@ -384,59 +379,6 @@ def assemble_parts(page_title, people_text, location_text, db):
     ret_val = link + u" - " + people_text + u" - " + location_text
     return ret_val
 
-#This will return a hash of the most major sections in the provided text
-#The keys will be a lower case version of the section title
-#The part of the text before the first section header can be accessed with:
-#   section_hash[""]
-def get_sections(text):
-    split_text = re.split("\n", text)
-    minlen = 99
-    for line in split_text:
-        match = re.match("\s*=+", line)
-        if ((match != None) and (len(string.strip(match.group(0))) < minlen)):
-            minlen = len(string.strip(match.group(0)))
-
-    equal_str = u""  
-    for i in range(0,minlen):
-        equal_str += u"="
-    match_str = u"\n\s*" + equal_str + "([^=]*?)" + equal_str
-
-    text_arr = re.split(match_str, text)
-    for i in range(0,len(text_arr)):
-        text_arr[i] = string.strip(text_arr[i])
-
-    section_hash = {}
-    section_hash[""] = text_arr[0]
-
-    for i in range(1,len(text_arr),2):
-        section_hash[string.lower(text_arr[i])] = text_arr[i+1]
-
-    return section_hash
-
-#This will look for a section with one of the names in name_arr
-#The search is case insensitive, and returns the first match,
-#  starting from name_arr[0] and continuing to name_arr[len(name_arr)-1]
-#It will return the body of the appropriate section, or None if
-#  there were no matches for the section name.
-def get_section(text, name_arr):
-    sections = get_sections(text)
-    for header in name_arr:
-        if(header in sections):
-            return sections[header]
-    if ((len(name_arr) == 0) and ("" in sections)):
-        return sections[""]
-    return None
-
-def get_section_regex(text, regex_text):
-    sections = get_sections(text)
-    if ((regex_text == None) and ("" in sections)):
-        return sections[""]
-    else:
-        for keys in sections.keys():
-            if(re.match(regex_text, keys)):
-                return sections[keys]
-    return None
-
 #This function will parse a list of users, and return them in a comma separated list.
 def get_people_text(text, people_text):
     people_text = re.sub("<!--.*?(-->|$)", "", people_text)
@@ -490,7 +432,7 @@ def parse_planning_page(page, db):
 
 #Generate the list of people
 #First look in appropriately named "who" sections
-    people_sec_text = get_section_regex(text, "(participants?|people)\??")
+    people_sec_text = getSectionRegex(text, "(participants?|people)\??")
     if(people_sec_text != None):
         people_text = get_people_text(text, people_sec_text)
 
@@ -500,15 +442,15 @@ def parse_planning_page(page, db):
 
 #Generate the Location text
 #First look in appropriately named "where" sections
-    location_sec_text = get_section_regex(text, "(location|where|about)\??")
+    location_sec_text = getSectionRegex(text, "(location|where|about|the spot)\??")
 
 #If that fails, look in appropriately named "expedition" sections
     if ((location_sec_text == None) or (len(get_location(location_sec_text)) == 0)):
-        location_sec_text = get_section_regex(text, "expeditions?")
+        location_sec_text = getSectionRegex(text, "expeditions?")
 
 #If that fails, look before any section headers
     if ((location_sec_text == None) or (len(get_location(location_sec_text)) == 0)):
-        location_sec_text = get_section_regex(text, None)
+        location_sec_text = getSectionRegex(text, None)
 
     if(location_sec_text != None):
         location_text = get_location(location_sec_text)
