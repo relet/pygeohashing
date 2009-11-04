@@ -53,6 +53,17 @@ def identifyParticipants(text, page):
     for part in linked:
       fuzzy[part]=fuzzy.get(part,0)+1.0;
 
+  #identify all ribbon bearers
+  linked = map(unscorify,RE_RIBBONBEARER.findall(text))
+  for part in linked:
+    part = part.split(",")
+    for ppart in part:
+      ppart = ppart.split(" and ")    
+      for pppart in ppart:
+        pppart = pppart.strip()
+        fuzzy[pppart]=fuzzyadd(fuzzy.get(pppart,1),5);
+
+  #increase the score of a potential participant by the number of mentions¹ vs total mentions 
   mentions = {}
   mcount   = 0.0
   for p in fuzzy.keys():
@@ -62,16 +73,6 @@ def identifyParticipants(text, page):
     for p,v in mentions.items():
       #print p,v*v/mcount
       fuzzy[p]=fuzzyadd(fuzzy[p],v*v/mcount)
-
-  #identify all ribbon bearers
-  linked = RE_RIBBONBEARER.findall(text)
-  for part in linked:
-    part = part.split(",")
-    for ppart in part:
-      ppart = ppart.split(" and ")    
-      for pppart in ppart:
-        pppart = pppart.strip()
-        fuzzy[pppart]=fuzzyadd(fuzzy.get(pppart,1),5);
 
   if len(fuzzy)==0: #only if we still don't have fuzz
     history = page.getVersionHistory(getAll=True)
