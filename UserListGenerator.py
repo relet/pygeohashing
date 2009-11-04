@@ -38,7 +38,7 @@ def identifyParticipants(text, page):
   if "[[Category:Not reached - Did not attempt]]" in text:
     return []
 
-  sections = getSection(text, ("participant", "participants", "people", "participant?", "participants?", "people?", "attendees", "attendees?", "the people", "adventurers"))
+  sections = getSectionRegex(text, "(participants?|(the )?people|attendees?|adventurers?)\??", "true")
   if sections:
     linked = map(unscorify, RE_USER.findall(sections))
     for part in linked:
@@ -98,7 +98,7 @@ def identifyParticipants(text, page):
   for p,v in fuzzy.items():
     if p in improbablenames:
       v = fuzzyadd(v,-1)
-    if v>=0.35:
+    if v>=0.33:
       participants.append(p)
   
 
@@ -122,7 +122,7 @@ ingredients: one wikipedia.Page object
 
 #Generate the list of people
 #First look in appropriately named "who" sections
-  peopleSecText = getSection(text, ("participant", "participants", "people", "participant?", "participants?", "people?"))
+  peopleSecText = getSectionRegex(text, "(participants?|people)\??")
   if(peopleSecText != None):
     peopleText = getPeopleText(text, peopleSecText)
 
@@ -132,8 +132,22 @@ ingredients: one wikipedia.Page object
 
   return peopleText
 
-def getSections(text):
-   text_arr = re.split("=+(.*?)=+", text)
+def getSections(text, subSects = None):
+   text = "\n" + text
+   if (subSects == None):
+      split_text = re.split("\n", text)
+      minlen = 99
+      for line in split_text:
+         match = re.match("\s*=+", line)
+         if ((match != None) and (len(string.strip(match.group(0))) < minlen)):
+            minlen = len(string.strip(match.group(0)))
+      regex_text = "\n\s*={" + str(minlen) + "," + str(minlen) + "}"
+      regex_text += "([^=]?)"
+      regex_text += "={" + str(minlen) + "," + str(minlen) + "}"
+   else:
+      regex_text = "\n\s*=+([^=]*?)=+"
+
+   text_arr = re.split(regex_text, text)
    for i in range(0,len(text_arr)):
        text_arr[i] = string.strip(text_arr[i])
 
@@ -144,15 +158,20 @@ def getSections(text):
      title = string.lower(text_arr[i])
      section_hash[title] = section_hash.get(title,"") + text_arr[i+1]
 
+#   for i in section_hash.keys():
+#      print i + ":",
+#      print ":" + section_hash[i]
+
    return section_hash
 
-def getSection(text, name_arr):
+def getSection(text, name_arr, subSects = None):
   """
 This will look for a section with one of the names in name_arr
 The search is case insensitive, and returns the first match, starting from name_arr[0] and continuing to name_arr[len(name_arr)-1]
 It will return the body of the appropriate section, or None if there were no matches for the section name.
+If subSects != None, then it will search for all subsections which match as well.
   """
-  sections = getSections(text)
+  sections = getSections(text, subSects)
   code = ""
   for header in name_arr:
       if header in sections:
@@ -163,12 +182,13 @@ It will return the body of the appropriate section, or None if there were no mat
     return code
   return None
 
-def get_section_regex(text, regex_text):
-  """
+def getSectionRegex(text, regex_text, subSects = None):
+    """
 This will look for a section with a name that matches the regex_text
 It will return the body of the appropriate section, or None if there were no matches for the section name.
-  """
-    sections = get_sections(text)
+If subSects != None, then it will search for all subsections which match as well.
+    """
+    sections = getSections(text, subSects)
     if ((regex_text == None) and ("" in sections)):
         return sections[""]
     else:
