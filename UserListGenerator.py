@@ -141,9 +141,10 @@ def getSections(text, subSects = None):
          match = re.match("\s*=+", line)
          if ((match != None) and (len(string.strip(match.group(0))) < minlen)):
             minlen = len(string.strip(match.group(0)))
-      regex_text = "\n\s*={" + str(minlen) + "," + str(minlen) + "}"
-      regex_text += "([^=]?)"
-      regex_text += "={" + str(minlen) + "," + str(minlen) + "}"
+      equal_str = u""  
+      for i in range(0,minlen):
+         equal_str += u"="
+      regex_text = u"\n\s*" + equal_str + "([^=]*?)" + equal_str
    else:
       regex_text = "\n\s*=+([^=]*?)=+"
 
