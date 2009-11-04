@@ -160,7 +160,7 @@ for peop in people.keys():
 
   print("stroke(%f, %f, %f)" % (random()*3/4, random()*3/4, random()*3/4)) #avoid full white
   print("text(\"+%s\", %i, %i)" % (events[0][0].encode("utf-8"), lastx, lasty-3))
-  print("oval(%i,%i,3,3)" % (event[0][1]-1,event[0][2]-1))
+  print("oval(%i,%i,3,3)" % (lastx-1,lasty-1))
   print("beginpath(%i,%i)" % (lastx, lasty))
   for event in events[1:]:
     x,y = xy(event[1],event[2])

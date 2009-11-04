@@ -85,8 +85,8 @@ def identifyParticipants(text, page):
     wlh = [r for r in page.getReferences()]
     #get user pages from the reference counter
     for l in wlh:
-      if "User:" in l:
-        fuzzy[l[5:]]=0.5
+      if "User:" in l.title():
+        fuzzy[l.title()[5:]]=0.5
     if len(fuzzy)>1: #but not too much, I say
       fuzzy = {}
 
