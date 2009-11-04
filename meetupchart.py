@@ -72,8 +72,6 @@ except:
   
 if not data:
   for location in locations:
-    if "50 -1" in str(location):
-      continue
     pages = location.articlesList()
     for page in pages:
       title = page.title()
