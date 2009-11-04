@@ -74,12 +74,21 @@ def identifyParticipants(text, page):
         fuzzy[pppart]=fuzzyadd(fuzzy.get(pppart,1),5);
 
   if len(fuzzy)==0: #only if we still don't have fuzz
-    history = page.getVersionHistory()
+    history = page.getVersionHistory(getAll=True)
     #compare the edit history with the page content
     editors = [change[2] for change in history]
     for editor in editors:
       if editor.lower() in text.lower():
         fuzzy[editor]=0.5
+
+  if len(fuzzy)==0: #only if we still don't have fuzz
+    wlh = [r for r in page.getReferences()]
+    #get user pages from the reference counter
+    for l in wlh:
+      if "User:" in l:
+        fuzzy[l[5:]]=0.5
+    if len(fuzzy)>1: #but not too much, I say
+      fuzzy = {}
 
   #print fuzzy
 
