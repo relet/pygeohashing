@@ -7,6 +7,8 @@ RE_USER = re.compile('\[\[[Uu]ser ?: ?(.*?) ?[\|\]]')
 RE_LISTED = re.compile(' *[\*#] *(.+?)\W')
 RE_RIBBONBEARER = re.compile('\{\{.*?name ?= ?(?:\[\[[Uu]ser:)?(.*?) ?[\|\}]')
 
+improbablenames = ["and", "i", "we"]
+
 def fuzzyadd(a,b): #combine two fuzzy values
   return (a+b)/2.0
   #return sqrt(a*a+b*b)
@@ -26,6 +28,9 @@ def normalize(dic):
       dic[p]=v/maxfuzz
   return dic
 
+def unscorify(word):
+  return word.replace("_"," ")
+
 def identifyParticipants(text, page):
   global debug_fuzz
   fuzzy = {} #user id -> probability of being a participant
@@ -33,25 +38,25 @@ def identifyParticipants(text, page):
   if "[[Category:Not reached - Did not attempt]]" in text:
     return []
 
-  sections = getSection(text, ("participant", "participants", "people", "participant?", "participants?", "people?", "attendees", "attendees?", "the people"))
+  sections = getSection(text, ("participant", "participants", "people", "participant?", "participants?", "people?", "attendees", "attendees?", "the people", "adventurers"))
   if sections:
-    linked = RE_USER.findall(sections)
+    linked = map(unscorify, RE_USER.findall(sections))
     for part in linked:
       fuzzy[part]=10.0; 
     #extract non user:-linked users from a list of participants
-    linked = RE_LISTED.findall(sections)
+    linked = map(unscorify, RE_LISTED.findall(sections))
     for part in linked:
       if not "[" in part: 
         fuzzy[part]=10.0;
   else:
-    linked = RE_USER.findall(text)
+    linked = map(unscorify,RE_USER.findall(text))
     for part in linked:
       fuzzy[part]=fuzzy.get(part,0)+1.0;
 
   mentions = {}
   mcount   = 0.0
   for p in fuzzy.keys():
-    mentions[p] = len(re.findall(p, text, re.IGNORECASE))
+    mentions[p] = len(re.findall(re.escape(p), text, re.IGNORECASE))
     mcount += mentions[p]
   if mcount>0:
     for p,v in mentions.items():
@@ -82,6 +87,8 @@ def identifyParticipants(text, page):
 
   participants = []
   for p,v in fuzzy.items():
+    if p in improbablenames:
+      v = fuzzyadd(v,-1)
     if v>=0.35:
       participants.append(p)
   
