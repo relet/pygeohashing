@@ -39,9 +39,8 @@ def distance(place1, place2):
 def resortPlacesByDistance(places):
   resorted = []
   last = []
-  place1 = places.pop(0)
+  place1 = "999 -999" 
   last.append(place1)
-  resorted.append(place1)
   while len(places)>0:
     mindist = 99999
     best = None
