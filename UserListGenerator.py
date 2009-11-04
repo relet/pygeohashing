@@ -5,7 +5,7 @@ import wikipedia, re, string
 
 RE_USER = re.compile('\[\[[Uu]ser ?: ?(.*?) ?[\|\]]')
 RE_LISTED = re.compile(' *[\*#] *(.+?)\W')
-RE_RIBBONBEARER = re.compile('\{\{.*?name ?= ?(.*?) ?[\|\}]')
+RE_RIBBONBEARER = re.compile('\{\{.*?name ?= ?(?:\[\[[Uu]ser:)?(.*?) ?[\|\}]')
 
 def fuzzyadd(a,b): #combine two fuzzy values
   return (a+b)/2.0
@@ -16,23 +16,37 @@ def getDebugFuzz():
   global debug_fuzz
   return debug_fuzz
 
+def normalize(dic):
+  maxfuzz = 0
+  for p,v in dic.items():
+    if v>maxfuzz:
+      maxfuzz=v
+  if maxfuzz>0:
+    for p,v in dic.items():
+      dic[p]=v/maxfuzz
+  return dic
+
 def identifyParticipants(text, page):
   global debug_fuzz
   fuzzy = {} #user id -> probability of being a participant
-  sections = getSection(text, ("participant", "participants", "people", "participant?", "participants?", "people?"))
+
+  if "[[Category:Not reached - Did not attempt]]" in text:
+    return []
+
+  sections = getSection(text, ("participant", "participants", "people", "participant?", "participants?", "people?", "attendees", "attendees?"))
   if sections:
     linked = RE_USER.findall(sections)
     for part in linked:
-      fuzzy[part]=5.0; 
+      fuzzy[part]=10.0; 
     if not linked:
       #extract non user:-linked users from a list of participants
       linked = RE_LISTED.findall(sections)
       for part in linked:
-        fuzzy[part]=0.5;
+        fuzzy[part]=1.0;
   else:
     linked = RE_USER.findall(text)
     for part in linked:
-      fuzzy[part]=1.0;
+      fuzzy[part]=fuzzy.get(part,0)+1.0;
 
   mentions = {}
   mcount   = 0.0
@@ -47,7 +61,12 @@ def identifyParticipants(text, page):
   #identify all ribbon bearers
   linked = RE_RIBBONBEARER.findall(text)
   for part in linked:
-    fuzzy[part]=fuzzyadd(fuzzy.get(part,0),1);
+    part = part.split(",")
+    for ppart in part:
+      ppart = ppart.split(" and ")    
+      for pppart in ppart:
+        pppart = pppart.strip()
+        fuzzy[pppart]=fuzzyadd(fuzzy.get(pppart,1),5);
 
   if len(fuzzy)==0: #only if we still don't have fuzz
     history = page.getVersionHistory()
@@ -55,12 +74,17 @@ def identifyParticipants(text, page):
     editors = [change[2] for change in history]
     for editor in editors:
       if editor.lower() in text.lower():
-        fuzzy[editor]=1.0
+        fuzzy[editor]=0.5
+
+  #print fuzzy
+
+  fuzzy = normalize(fuzzy)
 
   participants = []
   for p,v in fuzzy.items():
-    if v>1:
+    if v>=0.35:
       participants.append(p)
+  
 
   debug_fuzz = fuzzy
   return participants
