@@ -55,7 +55,7 @@ def resortPlacesByDistance(places):
     last.append(best)
     resorted.append(best)
     places.remove(best)
-    if len(last)>5:
+    if len(last)>10:
       last.pop(0)
   return resorted
 
@@ -174,14 +174,24 @@ while day <= datetime.datetime.strptime(latest, DATEFORMAT):
     print("endpath()")
   day += datetime.timedelta(1)
 
-print("stroke(.7,.7,.7)")
 for i,place in enumerate(places):
   x,y = xy(earliest, place)
-  print("text(\"%s\", 50, %i)" % (gratName(place).encode("utf-8"),y+4))
-  if i>0 and distance(places[i],places[i-1]) > 30: # draw horizontal separators between far-away graticules
+  if (i % 5) == 3:
+    print("stroke(.85,.85,.85)")
+    print("strokewidth(%i)" % ROW)
+    print("beginpath(%i,%i)" % (48, y-ROW))
+    print("lineto(%i,%i)" % (w, y-ROW))
+    print("endpath()")
+  if i>0 and distance(places[i],places[i-1]) > 50: # draw horizontal separators between far-away graticules
+    print("stroke(.7,.7,.7)")
+    print("strokewidth(.5)")
     print("beginpath(%i,%i)" % (LEFTMARGIN, y-ROW/2))
     print("lineto(%i,%i)" % (w, y-ROW/2))
     print("endpath()")
+for i,place in enumerate(places):
+  x,y = xy(earliest, place)
+  print("stroke(.6,.6,.6)")
+  print("text(\"%s\", 50, %i)" % (gratName(place).encode("utf-8"),y+4))
 
 print("strokewidth(1.2)")
 
