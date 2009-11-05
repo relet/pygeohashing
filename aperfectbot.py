@@ -52,6 +52,7 @@ def date_page_write(date, site):
     page = wikipedia.Page(site, date)
     if(not page.exists()):
         page_write(page, page_text, site)
+        add_date(site, date)
 
 #For displaying dates in a different manner than normal
 def holiday_lookup(date):
@@ -89,9 +90,18 @@ def remove_dates(site, dates):
 
     for i in dates:
         all_text = re.sub("(''')?" + i + "(''')?\n*", "", all_text)
+        all_text += "\n\n" + i
 
     page = wikipedia.Page(site, u"User:AperfectBot/Update_requests")
     page_write(page, all_text, site)
+
+def add_date(site, date):
+    page = wikipedia.Page(site, u"User:AperfectBot/Update_requests")
+    all_text = page.get()    
+    all_text += "\n\n" + date
+    page = wikipedia.Page(site, u"User:AperfectBot/Update_requests")
+    page_write(page, all_text, site)
+
 
 # Define the main function
 def main():
