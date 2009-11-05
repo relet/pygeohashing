@@ -2,13 +2,20 @@
 # -*- coding: utf-8 -*-
 
 import wikipedia, re, string
+import math
 
-RE_USER = re.compile('\[\[[Uu]ser ?: ?(.*?) ?[\|\]]')
-RE_LISTED = re.compile(' *[\*#] *(.+?)\W')
-RE_RIBBONBEARER = re.compile('\{\{.*?name ?= ?(?:\[\[[Uu]ser:)? ?(.*?) ?[\|\}]')
-RE_CARDRECIPIENT = re.compile('recipient ?= ?(?:\[\[[Uu]ser:)? ?(.*?) ?[\|\}]')
+RE_LINKS = re.compile('(\[\[[Uu]ser *: *(.+?) *(?:\| *(.*?) *)\]\])')
 
-improbablenames = ["and", "i", "we"]
+RE_USER = re.compile('\[\[[Uu]ser ?: ?(.+?) ?[\|\]]')
+RE_LISTED = re.compile('[\*#]\s*(\[.+?\]|.+?)\s+')
+RE_RIBBONBEARER = re.compile('\{\{.*?\|\s*name ?=\s*(.+?)(?:\}|\|\s*\w+\s*=)', re.DOTALL)
+RE_CARDRECIPIENT = re.compile('recipient ?=\s*(.+?)(?:\}|\|\s*\w+\s*=)')
+RE_ENTITLED = re.compile('==+(\[\[[Uu]ser.*?\])=+=')
+RE_MEETUP = re.compile('\{\{\s*[Mm]eet-up.*?\|\s*name\s*=\s*(.+?)(?:\}|\|\s*\w+\s*=)', re.DOTALL)
+RE_FIRST = re.compile('^.*?(\[\[[Uu]ser.+?\]\])', re.DOTALL)
+
+
+improbablenames = ["and", "i", "we", "the", "one"]
 
 def fuzzyadd(a,b): #combine two fuzzy values
   return (a+b)/2.0
@@ -22,6 +29,9 @@ def getDebugFuzz():
 def normalize(dic):
   maxfuzz = 0
   for p,v in dic.items():
+    if len(p)==0:
+      del dic[p]
+      continue
     if v>maxfuzz:
       maxfuzz=v
   if maxfuzz>0:
@@ -35,56 +45,74 @@ def unscorify(word):
 def splitgrouped(word):
   return re.split(",| and |&", word)
 
-def identifyParticipants(text, page):
+def identifyParticipants(text, page, getLinks = False):
   global debug_fuzz
+  
+  #print "===",page,"==="
   fuzzy = {} #user id -> probability of being a participant
   text = unscorify(text)
+  
+  pseudonyms = {}
+  userlinks  = {}
+  usernames  = {}
 
   if "[[Category:Not reached - Did not attempt]]" in text:
     return []
 
-  sections = getSectionRegex(text, "(participants?|(the )?people|attendees?|adventurers?)\??", "true")
+  scoring = {
+    RE_USER: 1,
+    RE_RIBBONBEARER: 3,
+    RE_CARDRECIPIENT: -5,
+    RE_ENTITLED: 20,
+    RE_MEETUP: 10,
+    RE_FIRST: 2,
+  }
+
+  sections = getSectionRegex(text, "(participants?|(the )?people|attendees?|adventurers?)\??", True)
   if sections:
-    linked = RE_USER.findall(sections)
-    linkedusers = linked
-    for part in linked:
-      fuzzy[part]=10.0; 
-    #extract non user:-linked users from a list of participants
-    listed = RE_LISTED.findall(sections)
-    for part in listed:
-      if not "[" in part: 
-        fuzzy[part]=10.0;
-  else:
-    linked = RE_USER.findall(text)
-    for part in linked:
-      fuzzy[part]=fuzzy.get(part,0)+1.0;
+    scoring[RE_LISTED] = 5;
+    text = sections
+  
+# identify pseudonyms, and user links
+  links = RE_LINKS.findall(text)
+  for part in links:
+    pseudonyms[part[0].lower()] = part[1].lower()
+    userlinks [part[1].lower()] = part[0]
+    usernames [part[0].lower()] = part[1]
+    if not part[2].lower() in improbablenames:
+      pseudonyms[part[2].lower()] = part[1].lower()
+      usernames [part[2].lower()] = part[1]
+      userlinks [part[2].lower()] = part[0]
 
-  #identify all ribbon bearers
-  ribboned = RE_RIBBONBEARER.findall(text)
-  for part in ribboned:
-    part = splitgrouped(part)
-    for ppart in part:
-      fuzzy[ppart]=fuzzyadd(fuzzy.get(ppart,1),5);
-  #identify all hashcard recipients
-  ribboned = RE_CARDRECIPIENT.findall(text)
-  for part in ribboned:
-    part = splitgrouped(part)
-    for ppart in part:
-      fuzzy[ppart]=fuzzyadd(fuzzy.get(ppart,1),-5);
+  text = text.lower()
 
+  for rex, score in scoring.items():
+    match = rex.findall(text)
+    for group in match:
+      parts = splitgrouped(group)
+      for part in parts:
+        part = part.lower().strip()
+        if not part in improbablenames:
+          if part in pseudonyms:
+            fuzzy[pseudonyms[part]]=fuzzy.get(pseudonyms[part],0) + score
+          else:
+            fuzzy[part]=fuzzy.get(part,0) + score
+            usernames[part.lower()] = part
+  
   #increase the score of a potential participant by the number of mentions¹ vs total mentions 
   mentions = {}
   mcount   = 0.0
   for p in fuzzy.keys():
-    mentions[p] = len(re.findall(re.escape(p), text, re.IGNORECASE))
+    mentions[p] = len(re.findall(re.escape(p), text, re.IGNORECASE)) 
     mcount += mentions[p] 
-  for p in linked: # then subtract one for every linked user (they are "mentioned" twice)
-    if p in mentions:
-      mentions[p] -= 1
-      mcount -= 1
+  for p in pseudonyms.keys():
+    pseudo_mentions = len(re.findall(re.escape(p), text, re.IGNORECASE)) + len(re.findall(re.escape(p), pseudonyms[p], re.IGNORECASE))
+    mentions[pseudonyms[p]] = mentions.get(pseudonyms[p],0) + pseudo_mentions
+    mcount += pseudo_mentions
+
   if mcount>0:
     for p,v in mentions.items():
-      fuzzy[p]=fuzzyadd(fuzzy[p],v*v/mcount)
+      fuzzy[p]=fuzzyadd(fuzzy.get(p,0),v/mcount)
 
   if len(fuzzy)==0: #only if we still don't have fuzz
     history = page.getVersionHistory(getAll=True)
@@ -103,20 +131,21 @@ def identifyParticipants(text, page):
     if len(fuzzy)>1: #but not too much, I say
       fuzzy = {}
 
-  #print fuzzy
-
   fuzzy = normalize(fuzzy)
 
   participants = []
   for p,v in fuzzy.items():
     if p in improbablenames:
       v = fuzzyadd(v,-1)
-    if v>=0.33:
+    if v>=0.35:
       participants.append(p)
-  
 
   debug_fuzz = fuzzy
-  return participants
+  
+  if getLinks:
+    return [userlinks.get(p,p) for p in participants] #that is: return a list of [userlinks[p] if it exists, else return p]
+  else:
+    return participants
   
 def getUsers(page):
   """
