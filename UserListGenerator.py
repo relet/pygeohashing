@@ -160,7 +160,7 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
   if getLinks:
     return [userlinks.get(p,p) for p in participants] #that is: return a list of [userlinks[p] if it exists, else return p]
   else:
-    return participants
+    return [usernames.get(p,p) for p in participants]
   
 def getUsers(page):
   """
