@@ -97,13 +97,13 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
     for group in match:
       parts = splitgrouped(group)
       for part in parts:
-        part = part.lower().strip()
-        if not part in improbablenames:
-          if part in pseudonyms:
-            fuzzy[pseudonyms[part]]=fuzzy.get(pseudonyms[part],0) + score
+        partls = part.lower().strip()
+        if not partls in improbablenames:
+          if partls in pseudonyms:
+            fuzzy[pseudonyms[partls]]=fuzzy.get(pseudonyms[partls],0) + score
           else:
-            fuzzy[part]=fuzzy.get(part,0) + score
-            usernames[part.lower()] = part
+            fuzzy[partls]=fuzzy.get(partls,0) + score
+            usernames[partls] = part.strip()
   
   #increase the score of a potential participant by the number of mentions¹ vs total mentions 
   mentions = {}
