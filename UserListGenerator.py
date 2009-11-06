@@ -8,6 +8,7 @@ RE_LINKS = re.compile('(\[\[[Uu]ser *: *(.+?) *(?:\| *(.*?) *)?\]\])')
 
 RE_USER = re.compile('\[\[[Uu]ser ?: ?(.+?) ?[\|\]]')
 RE_LISTED = re.compile('\s*[\*]\s*(\[.+?\]+|\S+)[^\n]*')
+RE_LISTEDLINK = re.compile('\s*[\*]\s*(\[.+?\]+)[^\n]*')
 RE_RIBBONBEARER = re.compile('\{\{.*?\|\s*name ?=\s*(.+?)(?:\}|\|\s*\w+\s*=)', re.DOTALL)
 RE_CARDRECIPIENT = re.compile('recipient ?=\s*(.+?)(?:\}|\|\s*\w+\s*=)')
 RE_ENTITLED = re.compile('==+\s*(\[\[[Uu]ser.*?\])\s*=+=')
@@ -47,6 +48,9 @@ def unscorify(word):
   return word.replace("_"," ")
 
 def splitgrouped(word):
+  fail = re.findall("\[User:[^]]+(?:,| and |&).*?\]", word)
+  if fail: #TODO: be smarter when splitting this
+    return [word]
   return re.split(",| and |&", word)
 
 def identifyParticipants(origtext, page, getLinks = False, getSections = True):
@@ -76,7 +80,8 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
   if getSections:
     sections = getSectionRegex(text, "(participants?|(the )?people|attendees?|adventurers?)\??", True)
     if sections:
-      scoring[RE_LISTED] = 5;
+      scoring[RE_LISTED] = 4;
+      scoring[RE_LISTEDLINK] = 4;
       text = sections
   
 # identify pseudonyms, and user links
