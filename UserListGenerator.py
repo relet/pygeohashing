@@ -7,7 +7,7 @@ import math
 RE_LINKS = re.compile('(\[\[[Uu]ser *: *(.+?) *(?:\| *(.*?) *)?\]\])')
 
 RE_USER = re.compile('\[\[[Uu]ser ?: ?(.+?) ?[\|\]]')
-RE_LISTED = re.compile('\s*[\*]\s*(\[.+?\]+|\S+)[^\n]*')
+RE_LISTED = re.compile('\s*[\*]\s*(?:(\[.+?\]+|\S+)(?: ?and ?|, ?| ?& ?)?)+[^\n]*')
 RE_LISTEDLINK = re.compile('\s*[\*].*?(\[.+?\]+)[^\n]*')
 RE_RIBBONBEARER = re.compile('\{\{.*?\|\s*name\s*=\s*([^\|]+?)(?:\}|\|\s*\w+\s*=)', re.DOTALL)
 RE_CARDRECIPIENT = re.compile('recipient ?=\s*(.+?)(?:\}|\|\s*\w+\s*=)')
