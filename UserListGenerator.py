@@ -90,8 +90,6 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
       usernames [part[2].lower()] = part[1]
       userlinks [part[2].lower()] = part[0]
 
-  text = text.lower()
-
   for rex, score in scoring.items():
     match = rex.findall(text)
     for group in match:
