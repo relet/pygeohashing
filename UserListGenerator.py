@@ -4,7 +4,7 @@
 import wikipedia, re, string
 import math
 
-RE_LINKS = re.compile('(\[\[[Uu]ser *: *(.+?) *(?:\| *(.*?) *)\]\])')
+RE_LINKS = re.compile('(\[\[[Uu]ser *: *(.+?) *(?:\| *(.*?) *)?\]\])')
 
 RE_USER = re.compile('\[\[[Uu]ser ?: ?(.+?) ?[\|\]]')
 RE_LISTED = re.compile('[\*#]\s*(\[.+?\]|[^\[]+?)\s+')
