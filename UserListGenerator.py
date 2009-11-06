@@ -8,8 +8,8 @@ RE_LINKS = re.compile('(\[\[[Uu]ser *: *(.+?) *(?:\| *(.*?) *)?\]\])')
 
 RE_USER = re.compile('\[\[[Uu]ser ?: ?(.+?) ?[\|\]]')
 RE_LISTED = re.compile('\s*[\*]\s*(\[.+?\]+|\S+)[^\n]*')
-RE_LISTEDLINK = re.compile('\s*[\*]\s*(\[.+?\]+)[^\n]*')
-RE_RIBBONBEARER = re.compile('\{\{.*?\|\s*name ?=\s*([^\|]+?)(?:\}|\|\s*\w+\s*=)', re.DOTALL)
+RE_LISTEDLINK = re.compile('\s*[\*].*?(\[.+?\]+)[^\n]*')
+RE_RIBBONBEARER = re.compile('\{\{.*?\|\s*name\s*=\s*([^\|]+?)(?:\}|\|\s*\w+\s*=)', re.DOTALL)
 RE_CARDRECIPIENT = re.compile('recipient ?=\s*(.+?)(?:\}|\|\s*\w+\s*=)')
 RE_ENTITLED = re.compile('==+\s*(\[\[[Uu]ser.*?\])\s*=+=')
 RE_MEETUP = re.compile('\{\{\s*[Mm]eet-up.*?\|\s*name\s*=\s*(.+?)(?:\}|\|\s*\w+\s*=)', re.DOTALL)
@@ -68,20 +68,20 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
   if "[[Category:Not reached - Did not attempt]]" in text:
     return []
 
-  scoring = {
-    RE_USER: 1,
-    RE_RIBBONBEARER: 3,
-    RE_CARDRECIPIENT: -5,
-    RE_ENTITLED: 20,
-    RE_MEETUP: 10,
-    RE_FIRST: 2,
-  }
+  scoring = [
+    (RE_USER, 1),
+    (RE_RIBBONBEARER, 3),
+    (RE_CARDRECIPIENT, -5),
+    (RE_ENTITLED, 20),
+    (RE_MEETUP, 10),
+    (RE_FIRST, 2),
+  ]
 
   if getSections:
     sections = getSectionRegex(text, "(participants?|(the )?people|attendees?|adventurers?)\??", True)
     if sections:
-      scoring[RE_LISTED] = 4;
-      scoring[RE_LISTEDLINK] = 4;
+      scoring.append((RE_LISTED, 4))
+      scoring.append((RE_LISTEDLINK, 4))
       text = sections
   
 # identify pseudonyms, and user links
@@ -95,7 +95,7 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
       usernames [part[2].lower()] = part[1]
       userlinks [part[2].lower()] = part[0]
 
-  for rex, score in scoring.items():
+  for rex, score in scoring:
     match = rex.findall(text)
     for group in match:
       parts = splitgrouped(group)
@@ -132,6 +132,8 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
       return identifyParticipants(origtext, page, getLinks, getSections = False)
 
   if len(fuzzy)==0: #only if we still don't have fuzz
+    print "FAIL", page	
+    sys.exit(1)
     history = page.getVersionHistory(getAll=True)
     #compare the edit history with the page content
     editors = [change[2] for change in history]
@@ -140,6 +142,7 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
         fuzzy[editor]=0.5
 
   if len(fuzzy)==0: #only if we still don't have fuzz
+    sys.exit(1)
     wlh = [r for r in page.getReferences()]
     #get user pages from the reference counter
     for l in wlh:
