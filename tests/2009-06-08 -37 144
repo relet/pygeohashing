@@ -1,0 +1,79 @@
+felix dance, stevage, matt
+[[User:Felix Dance|Felix Dance]], [[User:Stevage|Stevage]], Matt
+{{meetup graticule
+| map=<map lat="-37" lon="144" date="2009-06-08" />
+| lat=-37
+| lon=144
+| date=2009-06-08
+}}
+
+== The Place ==
+
+Well the actual place turned out to be near the town of Wallan off the Northern Highway, but we went to a point 5kms to the west of New Gisborne.  Let me explain.
+
+== Who Went ==
+
+[[User:Felix Dance|Felix Dance]]
+
+[[User:Stevage|Stevage]]
+
+Matt
+
+=== Felix Dance ===
+
+Over the long weekend, I and some 13 fellow travellers went on a three day cycle tour around the towns to the west of Melbourne.  We were riding from Castlemaine to Bacchus Marsh staying in the towns of Daylesford and Woodend.  On Saturday morning I got up at 6am to take the train with the others from the nearby Southern Cross Station and turned on my computer to get the next three geohash coordinates.
+
+Unfortunately, none of the Map Lookup sites was accessible for some reason - although the Wiki site was.  I then searched around for some other way of getting the coordinates, coming to the Sydney Wiki site which had the coordinates posted.  I carefully transcribed the decimal portion of these coordinates onto a piece of paper to enter later into my GPS and figure out the location of using my VicRoads Country Directory laminated photocopies which accompany me on all my cycle tours.
+
+After a fairly wet but quite scenic 50km day we arrived at Daylesford and set our tents up in the rain.  Here I transcribed the geohash coordinates into my GPS and worked out where they were in relation to the route we were taking - the first two had been and were dozens of kms away from where we had been/were going, but Monday's one seemed to be right on the very road we were intending to ride down as we approached the town of Gisborne.  'Awesome!', I exclaimed as I rushed to tell the others.
+
+After day two riding from Daylesford to Woodend (where we spent several hours at the local brewery before heading off to stay at a farmhouse of one of the riders' parents), we embarked on the day of the geohash.  We consumed the early part of the day with vanilla slices in Woodend, a picnic at Hanging Rock (which resulted in exactly the same number of people at the end as at the start), a hail-shot climb up Mt Macedon, gratuitous amounts of faffing around and a foolish mountain bike down the too-steep-and-muddy other side (where we encountered an old bloke with a broken leg and a swarm of land- and air-borne SES crew).
+
+Anyway, I digress.  Upon reaching the road to Gisborne, I and four others headed towards (what we thought was) the hash point in the dark.  Once it became apparent that reaching the hash point would involve missing the last train back to Melbourne for two hours, two of us bailed out and headed for the station.  only Matt, Stevage and I pressed on.
+
+We rode down Hamilton Road, away from the station and towards the full moon partly obscured by rain clouds, as my GPS showed the location was slowly veering from our bearing.  Luckily, with only a kilometre to go, a new road turned right towards the point and we soon came to a paddock in which the point was submerged by 450m of open field.  Ditching bikes we walked the rest of the way, stepping in frequent cow pats before awkwardly locating the exact position.
+
+Here we took a few photos, including a nude shot (tastefully from the back) to get the Nude Geohash Award, and headed back to our bikes at around 7pm.
+
+Rather than waiting around for the train from Gisborne, we all decided to press on to Bacchus Marsh, 35kms to the south west, and taking the final, 9:50pm, train back to Melbourne from there.  Stevage had to catch a 7am flight to Brisbane in the morning so he was keen not to miss that one.
+
+With the risk of this failed hash description becoming too long (bear with me, this is the good bit), the ride into Bacchus Marsh was spectacular.  The first 15kms was pretty average and slightly up hill, but the next 20kms was all down hill along a spur with full-moon lit views of Lerderderg Gorge on our right and a complete sweeping cityscape on our left - with views of all the western suburbs and the CBD brightly lit up.  Just awesome.
+
+Finally, upon our arrival at Bacchus Marsh, only Stevage managed to catch the train - it left the station 10 minutes earlier than our intelligence had suggested and Matt and I were busy buying dinner at KFC in town (Stevage played it safe by arriving at the station early).  This was no disaster, however, as Matt and I got a few beers and set up a tent in the local park.  We got up at 7 the next morning to take the train back to Melbourne.
+
+It was here that I had a look at the actual Map Lookup for the weekend and realised that the geohash location for the previous day bore no relation to the point we went to.  None of the numbers were the same and I couldn't get back to the published coordinates on the [[Sydney|Sydney Geohash Wiki Site]] as it had already been auto-updated.  Since I was so careful about copying down the coordinates, and that none of them even remotely matched reality, I can only blame Sydney for the error - first they try to upstage us with the Olympics, and now this!
+
+[[User:Felix Dance|Felix Dance]] 06:40, 10 June 2009 (UTC)
+
+Update: Here's what Stevage reckons:
+
+Ok, looks like that template wrappers a MediaWiki extension:
+[[MediaWiki_Implementation]]
+
+Which in turn gets its data from peeron. So if the official peeron map is down, that template is probably unreliable too - though I'm surprised it gave any meaningful results at all.
+
+== Photos ==
+
+<gallery perrow="3">
+Image:MattSteveFelix_090608.jpg|Matt, Steve and Felix at the presumed geohash location
+Image:GPS_090608.jpg|The offending GPS reading
+Image:FelixMatt_090608.jpg|Felix and Matt, confident and happy at a geohash successfully reached.
+</gallery>
+
+== Consolation Award ==
+
+{{Blinded by Science
+
+    | latitude = -37
+    | longitude = 144
+    | date = 2009-06-08
+    | reason = Coordinates Unrelated to Geohash
+    | name =
+    | image =
+
+}} 
+
+[[Category:Expeditions]]
+[[Category:Coordinates not reached]]
+[[Category:Expeditions with photos]]
+[[Category:Not reached - Technology]]
