@@ -50,13 +50,13 @@ def unscorify(word):
 def splitgrouped(word):
   return re.split(",| and |&", word)
 
-def identifyParticipants(text, page, getLinks = False):
+def identifyParticipants(origtext, page, getLinks = False, getSections = True):
   global debug_fuzz
   global debug_links
   
   #print "===",page,"==="
   fuzzy = {} #user id -> probability of being a participant
-  text = unscorify(text)
+  text = unscorify(origtext)
   
   pseudonyms = {}
   userlinks  = {}
@@ -74,10 +74,11 @@ def identifyParticipants(text, page, getLinks = False):
     RE_FIRST: 2,
   }
 
-  sections = getSectionRegex(text, "(participants?|(the )?people|attendees?|adventurers?)\??", True)
-  if sections:
-    scoring[RE_LISTED] = 5;
-    text = sections
+  if getSections:
+    sections = getSectionRegex(text, "(participants?|(the )?people|attendees?|adventurers?)\??", True)
+    if sections:
+      scoring[RE_LISTED] = 5;
+      text = sections
   
 # identify pseudonyms, and user links
   links = RE_LINKS.findall(text)
@@ -123,6 +124,10 @@ def identifyParticipants(text, page, getLinks = False):
   if mcount>0:
     for p,v in mentions.items():
       fuzzy[p]=fuzzyadd(fuzzy.get(p,0),v/mcount)
+
+  if len(fuzzy)==0: #only if we still don't have fuzz
+    if getSections:
+      return identifyParticipants(origtext, page, getLinks, getSections = False)
 
   if len(fuzzy)==0: #only if we still don't have fuzz
     history = page.getVersionHistory(getAll=True)
