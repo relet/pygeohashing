@@ -7,13 +7,12 @@ import math
 RE_LINKS = re.compile('(\[\[[Uu]ser *: *(.+?) *(?:\| *(.*?) *)?\]\])')
 
 RE_USER = re.compile('\[\[[Uu]ser ?: ?(.+?) ?[\|\]]')
-RE_LISTED = re.compile('\n\s*[\*#]\s*(\[.+?\]+|\S+)[^\n]*')
+RE_LISTED = re.compile('\s*[\*]\s*(\[.+?\]+|\S+)[^\n]*')
 RE_RIBBONBEARER = re.compile('\{\{.*?\|\s*name ?=\s*(.+?)(?:\}|\|\s*\w+\s*=)', re.DOTALL)
 RE_CARDRECIPIENT = re.compile('recipient ?=\s*(.+?)(?:\}|\|\s*\w+\s*=)')
 RE_ENTITLED = re.compile('==+(\[\[[Uu]ser.*?\])=+=')
 RE_MEETUP = re.compile('\{\{\s*[Mm]eet-up.*?\|\s*name\s*=\s*(.+?)(?:\}|\|\s*\w+\s*=)', re.DOTALL)
 RE_FIRST = re.compile('^.*?(\[\[[Uu]ser.+?\]\])', re.DOTALL)
-
 
 improbablenames = ["and", "i", "we", "the", "one", "all attendees", "everyone"]
 
