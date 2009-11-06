@@ -15,16 +15,21 @@ RE_MEETUP = re.compile('\{\{\s*[Mm]eet-up.*?\|\s*name\s*=\s*(.+?)(?:\}|\|\s*\w+\
 RE_FIRST = re.compile('^.*?(\[\[[Uu]ser.+?\]\])', re.DOTALL)
 
 
-improbablenames = ["and", "i", "we", "the", "one"]
+improbablenames = ["and", "i", "we", "the", "one", "all attendees", "everyone"]
 
 def fuzzyadd(a,b): #combine two fuzzy values
   return (a+b)/2.0
   #return sqrt(a*a+b*b)
 
 debug_fuzz = None
+debug_links = None
 def getDebugFuzz():
   global debug_fuzz
   return debug_fuzz
+
+def getDebugLinks():
+  global debug_links
+  return debug_links
 
 def normalize(dic):
   maxfuzz = 0
@@ -47,6 +52,7 @@ def splitgrouped(word):
 
 def identifyParticipants(text, page, getLinks = False):
   global debug_fuzz
+  global debug_links
   
   #print "===",page,"==="
   fuzzy = {} #user id -> probability of being a participant
@@ -141,6 +147,7 @@ def identifyParticipants(text, page, getLinks = False):
       participants.append(p)
 
   debug_fuzz = fuzzy
+  debug_links = userlinks
   
   if getLinks:
     return [userlinks.get(p,p) for p in participants] #that is: return a list of [userlinks[p] if it exists, else return p]
