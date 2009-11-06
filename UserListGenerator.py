@@ -7,7 +7,7 @@ import math
 RE_LINKS = re.compile('(\[\[[Uu]ser *: *(.+?) *(?:\| *(.*?) *)?\]\])')
 
 RE_USER = re.compile('\[\[[Uu]ser ?: ?(.+?) ?[\|\]]')
-RE_LISTED = re.compile('[\*#]\s*(\[.+?\]|[^\[]+?)\s+')
+RE_LISTED = re.compile('\n\s*[\*#]\s*(\[.+?\]+|\S+)[^\n]*')
 RE_RIBBONBEARER = re.compile('\{\{.*?\|\s*name ?=\s*(.+?)(?:\}|\|\s*\w+\s*=)', re.DOTALL)
 RE_CARDRECIPIENT = re.compile('recipient ?=\s*(.+?)(?:\}|\|\s*\w+\s*=)')
 RE_ENTITLED = re.compile('==+(\[\[[Uu]ser.*?\])=+=')
@@ -112,9 +112,13 @@ def identifyParticipants(text, page, getLinks = False):
     mentions[p] = len(re.findall(re.escape(p), text, re.IGNORECASE)) 
     mcount += mentions[p] 
   for p in pseudonyms.keys():
-    pseudo_mentions = len(re.findall(re.escape(p), text, re.IGNORECASE)) + len(re.findall(re.escape(p), pseudonyms[p], re.IGNORECASE))
-    mentions[pseudonyms[p]] = mentions.get(pseudonyms[p],0) + pseudo_mentions
-    mcount += pseudo_mentions
+    if p not in fuzzy.keys():
+      pseudo_mentions = len(re.findall(re.escape(p), text, re.IGNORECASE)) + len(re.findall(re.escape(p), pseudonyms[p], re.IGNORECASE))
+      if RE_USER.match(p):
+        mentions_per_link = len(re.findall(re.escape(pseudonyms[p]), p, re.IGNORECASE))
+        pseudo_mentions -= pseudo_mentions * mentions_per_link
+      mentions[pseudonyms[p]] = mentions.get(pseudonyms[p],0) + pseudo_mentions
+      mcount += pseudo_mentions
 
   if mcount>0:
     for p,v in mentions.items():
