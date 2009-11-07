@@ -2,24 +2,24 @@
 # -*- coding: utf-8 -*-
 
 import wikipedia, re, string
-import math
+import math, sys
 
-RE_LINKS = re.compile('(\[\[[Uu]ser *: *(.+?) *(?:\| *(.*?) *)?\]\])')
 
-RE_USER = re.compile('\[\[[Uu]ser ?: ?(.+?) ?[\|\]]')
-RE_LISTED = re.compile('\s*[\*]\s*(?:(\[.+?\]+|\S+)(?: ?and ?|, ?| ?& ?)?)+[^\n]*')
-RE_LISTEDLINK = re.compile('\s*[\*].*?(\[.+?\]+)[^\n]*')
-RE_RIBBONBEARER = re.compile('\{\{.*?\|\s*name\s*=\s*([^\|]+?)(?:\}|\|\s*\w+\s*=)', re.DOTALL)
-RE_CARDRECIPIENT = re.compile('recipient ?=\s*(.+?)(?:\}|\|\s*\w+\s*=)')
-RE_ENTITLED = re.compile('==+\s*(\[\[[Uu]ser.*?\])\s*=+=')
-RE_MEETUP = re.compile('\{\{\s*[Mm]eet-up.*?\|\s*name\s*=\s*(.+?)(?:\}|\|\s*\w+\s*=)', re.DOTALL)
+re_userlink = '\[\[[Uu]ser\s*:\s*(.+?)\s*(?:\|\s*(?:.+?)\s*)?\]\]'
+re_userlist = '(?:(?:'+re_userlink+'|(\S+))(?: ?and ?|, ?| ?& ?)?)+'
+re_option   = '\s*([^=]+?)(?:\}|\|\s*\w+\s*=)'
+RE_LINKS = re.compile('(\[\[[Uu]ser *: *(.+?) *(?:\| *(.+?) *)?\]\])')
+
+RE_USERLINK = re.compile(re_userlink)
+RE_LISTED = re.compile('\s*[\*]\s*'+re_userlist+'[^\n]*')
+RE_LISTEDLINK = re.compile('\s*[\*].*?'+re_userlink+'[^\n]*')
+RE_RIBBONBEARER = re.compile('\{\{.*?\|\s*name\s*='+re_option, re.DOTALL)
+RE_CARDRECIPIENT = re.compile('recipient ?='+re_option)
+RE_ENTITLED = re.compile('==+\s*'+re_userlink+'\s*=+=')
+RE_MEETUP = re.compile('\{\{\s*[Mm]eet-up.*?\|\s*name\s*='+re_option, re.DOTALL)
 RE_FIRST = re.compile('^.*?(\[\[[Uu]ser.+?\]\])', re.DOTALL)
 
 improbablenames = ["and", "i", "we", "the", "one", "all attendees", "everyone", "his", "her"]
-
-def fuzzyadd(a,b): #combine two fuzzy values
-  return (a+b)/2.0
-  #return sqrt(a*a+b*b)
 
 debug_fuzz = None
 debug_links = None
@@ -53,6 +53,22 @@ def splitgrouped(word):
     return [word]
   return re.split(",| and |&", word)
 
+def flatten(l, ltypes=(list, tuple)):
+    """flatten an array or list"""
+    ltype = type(l)
+    l = list(l)
+    i = 0
+    while i < len(l):
+        while isinstance(l[i], ltypes):
+            if not l[i]:
+                l.pop(i)
+                i -= 1
+                break
+            else:
+                l[i:i + 1] = l[i]
+        i += 1
+    return ltype(l)
+
 def identifyParticipants(origtext, page, getLinks = False, getSections = True):
   global debug_fuzz
   global debug_links
@@ -75,7 +91,7 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
     return []
 
   scoring = [
-    (RE_USER, 1),
+    (RE_USERLINK, 1),
     (RE_RIBBONBEARER, 3),
     (RE_CARDRECIPIENT, -5),
     (RE_ENTITLED, 20),
@@ -102,7 +118,7 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
       userlinks [part[2].lower()] = part[0]
 
   for rex, score in scoring:
-    match = rex.findall(text)
+    match = flatten(rex.findall(text))
     for group in match:
       parts = splitgrouped(group)
       for part in parts:
@@ -123,7 +139,7 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
   for p in pseudonyms.keys():
     if p not in fuzzy.keys():
       pseudo_mentions = len(re.findall(re.escape(p), text, re.IGNORECASE)) + len(re.findall(re.escape(p), pseudonyms[p], re.IGNORECASE))
-      if RE_USER.match(p):
+      if RE_USERLINK.match(p):
         mentions_per_link = len(re.findall(re.escape(pseudonyms[p]), p, re.IGNORECASE))
         pseudo_mentions -= pseudo_mentions * mentions_per_link
       mentions[pseudonyms[p]] = mentions.get(pseudonyms[p],0) + pseudo_mentions
@@ -131,7 +147,7 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
 
   if mcount>0:
     for p,v in mentions.items():
-      fuzzy[p]=fuzzyadd(fuzzy.get(p,0),v/mcount)
+      fuzzy[p]=fuzzy.get(p,0) + v/mcount
 
   if len(fuzzy)==0: #only if we still don't have fuzz
     if getSections:
@@ -139,7 +155,6 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
 
   if len(fuzzy)==0: #only if we still don't have fuzz
     print "FAIL", page	
-#    sys.exit(1)
     return []
     history = page.getVersionHistory(getAll=True)
     #compare the edit history with the page content
@@ -163,7 +178,7 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
   participants = []
   for p,v in fuzzy.items():
     if p in improbablenames:
-      v = fuzzyadd(v,-1)
+      continue
     if v>=0.35:
       participants.append(p)
 
