@@ -34,7 +34,7 @@ RE_MEETUP = re.compile('\{\{\s*[Mm]eet-up.*?\|\s*name\s*='+re_option, re.DOTALL)
 RE_FIRST = re.compile('^.*?'+re_userlink, re.DOTALL)
 RE_COMMONPLACES = re.compile('(?:reached by)\s+'+re_maybelist+'\s*\.')
 
-improbablenames = ["", " ", "and", "i", "we", "the", "one", "all attendees", "everyone", "his", "her"]
+improbablenames = ["", " ", "and", "i", "i'll", "we", "the", "one", "all attendees", "everyone", "his", "her"]
 
 debug_fuzz = None
 debug_links = None
@@ -107,18 +107,18 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
 
   scoring = [
     (RE_USERLINK, 1),
-    (RE_RIBBONBEARER, 3),
+    (RE_RIBBONBEARER, 10),
     (RE_CARDRECIPIENT, -5),
     (RE_ENTITLED, 20),
     (RE_MEETUP, 10),
-    (RE_FIRST, 2),
+    (RE_FIRST, 5),
     (RE_COMMONPLACES, 1),
   ]
 
   if getSections:
-    sections = getSectionRegex(text, "(participants?|(the\s)?people|attendees?|adventurers?)\??", True)
+    sections = getSectionRegex(text, "(participants?|(the\s)?people|attendees?|adventurers?|geohashers?)\??", True)
     if sections:
-      scoring.append((RE_LISTED, 4))
+      scoring.append((RE_LISTED, 1))
       scoring.append((RE_LISTEDLINK, 4))
       text = sections
   
@@ -195,7 +195,7 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
   for p,v in fuzzy.items():
     if p in improbablenames:
       continue
-    if v>=0.35:
+    if v>=0.30:
       participants.append(p)
 
   debug_fuzz = fuzzy
@@ -295,7 +295,7 @@ If subSects != None, then it will search for all subsections which match as well
         return sections[""]
     else:
         for keys in sections.keys():
-            if(re.match(regex_text, keys)):
+            if(re.search(regex_text, keys)):
                 return sections[keys]
     return None
 
