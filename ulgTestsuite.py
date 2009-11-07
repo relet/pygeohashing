@@ -3,10 +3,13 @@
 
 import os, wikipedia, string
 from UserListGenerator import *
+import re
 
 library = os.listdir("tests")
 
 site = wikipedia.getSite()
+
+RE_LINKS = re.compile("\s*((?:\[\[.+?\]\])|(?:[^,[]+))\s*,?")
 
 failcount = 0
 total = 0
@@ -20,8 +23,7 @@ for test in library:
   links        = rest [:rest.index("\n")]
   report       = rest [rest.index("\n")+1:] #split off the rest
   correct_parts = [x.lower().strip() for x in participants.split(",") if len(x.strip())>0]
-  correct_links = [x.strip() for x in links.split(",") if len(x.strip())>0]
-
+  correct_links = [x.strip() for x in RE_LINKS.findall(links) if len(x.strip())>0]
   result_parts = identifyParticipants(report, wikipedia.Page(site, test), None) #we might have to connect to the wiki to get the history / what-links-here
   result_parts = map(string.lower, result_parts)  
 
