@@ -2,24 +2,39 @@
 # -*- coding: utf-8 -*-
 
 import wikipedia, re, string
-import math
+import math, sys
 
-RE_LINKS = re.compile('(\[\[[Uu]ser *: *(.+?) *(?:\| *(.*?) *)?\]\])')
 
-RE_USER = re.compile('\[\[[Uu]ser ?: ?(.+?) ?[\|\]]')
-RE_LISTED = re.compile('\s*[\*]\s*(?:(\[.+?\]+|\S+)(?: ?and ?|, ?| ?& ?)?)+[^\n]*')
-RE_LISTEDLINK = re.compile('\s*[\*].*?(\[.+?\]+)[^\n]*')
-RE_RIBBONBEARER = re.compile('\{\{.*?\|\s*name\s*=\s*([^\|]+?)(?:\}|\|\s*\w+\s*=)', re.DOTALL)
-RE_CARDRECIPIENT = re.compile('recipient ?=\s*(.+?)(?:\}|\|\s*\w+\s*=)')
-RE_ENTITLED = re.compile('==+\s*(\[\[[Uu]ser.*?\])\s*=+=')
-RE_MEETUP = re.compile('\{\{\s*[Mm]eet-up.*?\|\s*name\s*=\s*(.+?)(?:\}|\|\s*\w+\s*=)', re.DOTALL)
-RE_FIRST = re.compile('^.*?(\[\[[Uu]ser.+?\]\])', re.DOTALL)
+RE_LINKS = re.compile('(\[\[[Uu]ser *: *(.+?) *(?:\| *(.+?) *)?\]\])')
 
-improbablenames = ["and", "i", "we", "the", "one", "all attendees", "everyone", "his", "her"]
+# anything within a [[User:x|y]] style link 
+re_userlink = '\[\[[Uu]ser\s*:\s*(.+?)\s*(?:\|\s*(?:.+?)\s*)?\]\]'
+# the same, or just an arbitrary string
+re_maybelink = '(?:'+re_userlink+'|(\S+))'
+# any enumerator
+re_enumerator = '(?: and |, ?| ?& ?)'
 
-def fuzzyadd(a,b): #combine two fuzzy values
-  return (a+b)/2.0
-  #return sqrt(a*a+b*b)
+# a sequence of re_maybelinks, separated by re_enumerators
+re_maybelist = re_maybelink+'(?:'+re_enumerator+re_maybelink+')*'
+# a sequence of re_userlinks, separated by re_enumerators
+re_strictlylist = '(?:'+re_userlink+'(?:'+re_enumerator+re_userlink+')+)'
+# either a re_userlink, or a re_strictlylist
+re_linkorlist = '(?:'+re_userlink+'|'+re_strictlylist+')'
+
+# an option to a wiki template
+re_option   = '\s*([^=]+?)(?:\}|\|\s*\w+\s*=)'
+
+RE_USERLINK = re.compile(re_userlink)
+RE_LISTED = re.compile('\s*[\*]\s*'+re_maybelist+'[^\n]*')
+RE_LISTEDLINK = re.compile('\s*[\*].*?'+re_userlink+'[^\n]*')
+RE_RIBBONBEARER = re.compile('\{\{.*?\|\s*name\s*='+re_option, re.DOTALL)
+RE_CARDRECIPIENT = re.compile('recipient ?='+re_option)
+RE_ENTITLED = re.compile('==+\s*'+re_linkorlist+'\s*=+=')
+RE_MEETUP = re.compile('\{\{\s*[Mm]eet-up.*?\|\s*name\s*='+re_option, re.DOTALL)
+RE_FIRST = re.compile('^.*?'+re_userlink, re.DOTALL)
+RE_COMMONPLACES = re.compile('(?:reached by)\s+'+re_maybelist+'\s*\.')
+
+improbablenames = ["", " ", "and", "i", "i'll", "we", "the", "one", "all attendees", "everyone", "his", "her"]
 
 debug_fuzz = None
 debug_links = None
@@ -53,6 +68,22 @@ def splitgrouped(word):
     return [word]
   return re.split(",| and |&", word)
 
+def flatten(l, ltypes=(list, tuple)):
+    """flatten an array or list"""
+    ltype = type(l)
+    l = list(l)
+    i = 0
+    while i < len(l):
+        while isinstance(l[i], ltypes):
+            if not l[i]:
+                l.pop(i)
+                i -= 1
+                break
+            else:
+                l[i:i + 1] = l[i]
+        i += 1
+    return ltype(l)
+
 def identifyParticipants(origtext, page, getLinks = False, getSections = True):
   global debug_fuzz
   global debug_links
@@ -75,18 +106,19 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
     return []
 
   scoring = [
-    (RE_USER, 1),
-    (RE_RIBBONBEARER, 3),
+    (RE_USERLINK, 1),
+    (RE_RIBBONBEARER, 10),
     (RE_CARDRECIPIENT, -5),
     (RE_ENTITLED, 20),
     (RE_MEETUP, 10),
-    (RE_FIRST, 2),
+    (RE_FIRST, 5),
+    (RE_COMMONPLACES, 1),
   ]
 
   if getSections:
-    sections = getSectionRegex(text, "(participants?|(the )?people|attendees?|adventurers?)\??", True)
+    sections = getSectionRegex(text, "(participants?|(the\s)?people|attendees?|adventurers?|geohashers?)\??", True)
     if sections:
-      scoring.append((RE_LISTED, 4))
+      scoring.append((RE_LISTED, 1))
       scoring.append((RE_LISTEDLINK, 4))
       text = sections
   
@@ -102,7 +134,7 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
       userlinks [part[2].lower()] = part[0]
 
   for rex, score in scoring:
-    match = rex.findall(text)
+    match = flatten(rex.findall(text))
     for group in match:
       parts = splitgrouped(group)
       for part in parts:
@@ -114,16 +146,16 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
             fuzzy[partls]=fuzzy.get(partls,0) + score
             usernames[partls] = part.strip()
   
-  #increase the score of a potential participant by the number of mentions¹ vs total mentions 
+  #increase the score of a potential participant by the number of mentions vs total mentions 
   mentions = {}
   mcount   = 0.0
   for p in fuzzy.keys():
-    mentions[p] = len(re.findall(re.escape(p), text, re.IGNORECASE)) 
-    mcount += mentions[p] 
+    mentions[p] = len(re.findall(re.escape(p), origtext, re.IGNORECASE)) 
+    mcount += mentions[p]
   for p in pseudonyms.keys():
     if p not in fuzzy.keys():
-      pseudo_mentions = len(re.findall(re.escape(p), text, re.IGNORECASE)) + len(re.findall(re.escape(p), pseudonyms[p], re.IGNORECASE))
-      if RE_USER.match(p):
+      pseudo_mentions = len(re.findall(re.escape(p), origtext, re.IGNORECASE)) + len(re.findall(re.escape(p), pseudonyms[p], re.IGNORECASE))
+      if RE_USERLINK.match(p):
         mentions_per_link = len(re.findall(re.escape(pseudonyms[p]), p, re.IGNORECASE))
         pseudo_mentions -= pseudo_mentions * mentions_per_link
       mentions[pseudonyms[p]] = mentions.get(pseudonyms[p],0) + pseudo_mentions
@@ -131,7 +163,7 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
 
   if mcount>0:
     for p,v in mentions.items():
-      fuzzy[p]=fuzzyadd(fuzzy.get(p,0),v/mcount)
+      fuzzy[p]=fuzzy.get(p,0) + (v/mcount)*2
 
   if len(fuzzy)==0: #only if we still don't have fuzz
     if getSections:
@@ -139,7 +171,6 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
 
   if len(fuzzy)==0: #only if we still don't have fuzz
     print "FAIL", page	
-#    sys.exit(1)
     return []
     history = page.getVersionHistory(getAll=True)
     #compare the edit history with the page content
@@ -163,8 +194,8 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
   participants = []
   for p,v in fuzzy.items():
     if p in improbablenames:
-      v = fuzzyadd(v,-1)
-    if v>=0.35:
+      continue
+    if v>=0.30:
       participants.append(p)
 
   debug_fuzz = fuzzy
@@ -264,7 +295,7 @@ If subSects != None, then it will search for all subsections which match as well
         return sections[""]
     else:
         for keys in sections.keys():
-            if(re.match(regex_text, keys)):
+            if(re.search(regex_text, keys)):
                 return sections[keys]
     return None
 
