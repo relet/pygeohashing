@@ -81,6 +81,17 @@ def get_old_dates(site):
 
     page = wikipedia.Page(site, u"User:AperfectBot/Update_requests")
     page_write(page, all_text, site)
+
+    fh = open("aperfectbot_updates.txt", "r")
+    all_text = fh.read()
+
+    matches = re.findall("(''')?(\d{4}-\d{2}-\d{2})(''')?", all_text)
+    all_text = re.sub("(''')?(\d{4}-\d{2}-\d{2})(''')?", "'''\g<2>'''", all_text, 3)
+    match_list2 = []
+    for i in range(0, min(len(matches), 3)):
+        match_list.append(matches[i][1])
+    fh.close()
+
     return match_list
 
 #Clear off the dates which were just updated
@@ -88,12 +99,22 @@ def remove_dates(site, dates):
     page = wikipedia.Page(site, u"User:AperfectBot/Update_requests")
     all_text = page.get()    
 
+    fh = open("aperfectbot_updates.txt", "r")
+    all_text_file = fh.read()
+    fh.close()
+
     for i in dates:
         all_text = re.sub("(''')?" + i + "(''')?\n*", "", all_text)
-        all_text += "\n\n" + i
+        all_text_file = re.sub("(''')?" + i + "(''')?\n*", "", all_text_file)
+        all_text_file += "\n" + i
 
     page = wikipedia.Page(site, u"User:AperfectBot/Update_requests")
     page_write(page, all_text, site)
+
+    fh = open("aperfectbot_updates.txt", "w")
+    fh.write(all_text_file)
+    fh.close()
+
 
 def add_date(site, date):
     page = wikipedia.Page(site, u"User:AperfectBot/Update_requests")
