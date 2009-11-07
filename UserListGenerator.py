@@ -34,10 +34,10 @@ RE_ENTITLED = re.compile('==+\s*'+re_linkorlist+'\s*=+=')
 RE_MEETUP = re.compile('\{\{\s*[Mm]eet-up.*?\|\s*name\s*='+re_option, re.DOTALL)
 RE_FIRST = re.compile('^.*?'+re_userlink, re.DOTALL)
 RE_COMMONPLACES = re.compile('(?:reached by)\s+'+re_maybelist+'\s*\.')
-RE_BOLDED = re.compile('\\\'{3}'+re_maybelist+'\\\'{3}') #does not work!
+RE_BOLDED = re.compile('\\\'{3}'+re_maybelist) #does not work!
 RE_PARALIST = re.compile('\n\n'+re_maybelink+'.*?(?=\n\n)', re.MULTILINE ^ re.DOTALL)
 
-improbablenames = ["", " ", "and", "i", "i'll", "we", "the", "one", "all attendees", "everyone", "his", "her"]
+improbablenames = ["", " ", "a", "and", "i", "i'll", "we", "the", "one", "all attendees", "everyone", "his", "her"]
 
 debug_fuzz = None
 debug_links = None
@@ -114,7 +114,6 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
     (RE_CARDRECIPIENT, -5),
     (RE_ENTITLED, 20),
     (RE_MEETUP, 10),
-    (RE_FIRST, 5),
     (RE_COMMONPLACES, 1),
 #    (RE_BOLDED, 1),
   ]
@@ -126,6 +125,9 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
       scoring.append((RE_LISTEDLINK, 4))
       scoring.append((RE_PARALIST, 1))
       text = sections
+    else:
+      scoring.append((RE_FIRST, 5))
+
   
 # identify pseudonyms, and user links
   links = RE_LINKS.findall(text)
