@@ -9,8 +9,9 @@ RE_LINKS = re.compile('(\[\[[Uu]ser *: *(.+?) *(?:\| *(.+?) *)?\]\])')
 
 # anything within a [[User:x|y]] style link 
 re_userlink = '\[\[[Uu]ser\s*:\s*(.+?)\s*(?:\|\s*(?:.+?)\s*)?\]\]'
+re_userstring = '(\w{1,64})' #how long would a reasonable username be?
 # the same, or just an arbitrary string
-re_maybelink = '(?:'+re_userlink+'|(\S+))'
+re_maybelink = '(?:'+re_userlink+'|'+re_userstring+')'
 # any enumerator
 re_enumerator = '(?: and |, ?| ?& ?)'
 
@@ -33,6 +34,8 @@ RE_ENTITLED = re.compile('==+\s*'+re_linkorlist+'\s*=+=')
 RE_MEETUP = re.compile('\{\{\s*[Mm]eet-up.*?\|\s*name\s*='+re_option, re.DOTALL)
 RE_FIRST = re.compile('^.*?'+re_userlink, re.DOTALL)
 RE_COMMONPLACES = re.compile('(?:reached by)\s+'+re_maybelist+'\s*\.')
+RE_BOLDED = re.compile('\\\'{3}'+re_maybelist+'\\\'{3}') #does not work!
+RE_PARALIST = re.compile('\n\n'+re_maybelink+'.*?(?=\n\n)', re.MULTILINE ^ re.DOTALL)
 
 improbablenames = ["", " ", "and", "i", "i'll", "we", "the", "one", "all attendees", "everyone", "his", "her"]
 
@@ -113,13 +116,15 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
     (RE_MEETUP, 10),
     (RE_FIRST, 5),
     (RE_COMMONPLACES, 1),
+#    (RE_BOLDED, 1),
   ]
 
   if getSections:
-    sections = getSectionRegex(text, "(participants?|(the\s)?people|attendees?|adventurers?|geohashers?)\??", True)
+    sections = getSectionRegex(text, "(participants?|(the\s)?people|attend[esanc]+|adventurers?|geohashers?|reached)\??", True)
     if sections:
       scoring.append((RE_LISTED, 1))
       scoring.append((RE_LISTEDLINK, 4))
+      scoring.append((RE_PARALIST, 1))
       text = sections
   
 # identify pseudonyms, and user links
