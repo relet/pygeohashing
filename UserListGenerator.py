@@ -34,7 +34,7 @@ RE_MEETUP = re.compile('\{\{\s*[Mm]eet-up.*?\|\s*name\s*='+re_option, re.DOTALL)
 RE_FIRST = re.compile('^.*?'+re_userlink, re.DOTALL)
 RE_COMMONPLACES = re.compile('(?:reached by)\s+'+re_maybelist+'\s*\.')
 
-improbablenames = ["and", "i", "we", "the", "one", "all attendees", "everyone", "his", "her"]
+improbablenames = ["", " ", "and", "i", "we", "the", "one", "all attendees", "everyone", "his", "her"]
 
 debug_fuzz = None
 debug_links = None
@@ -116,7 +116,7 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
   ]
 
   if getSections:
-    sections = getSectionRegex(text, "(participants?|(the )?people|attendees?|adventurers?)\??", True)
+    sections = getSectionRegex(text, "(participants?|(the\s)?people|attendees?|adventurers?)\??", True)
     if sections:
       scoring.append((RE_LISTED, 4))
       scoring.append((RE_LISTEDLINK, 4))
@@ -146,15 +146,15 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
             fuzzy[partls]=fuzzy.get(partls,0) + score
             usernames[partls] = part.strip()
   
-  #increase the score of a potential participant by the number of mentions¹ vs total mentions 
+  #increase the score of a potential participant by the number of mentions vs total mentions 
   mentions = {}
   mcount   = 0.0
   for p in fuzzy.keys():
-    mentions[p] = len(re.findall(re.escape(p), text, re.IGNORECASE)) 
-    mcount += mentions[p] 
+    mentions[p] = len(re.findall(re.escape(p), origtext, re.IGNORECASE)) 
+    mcount += mentions[p]
   for p in pseudonyms.keys():
     if p not in fuzzy.keys():
-      pseudo_mentions = len(re.findall(re.escape(p), text, re.IGNORECASE)) + len(re.findall(re.escape(p), pseudonyms[p], re.IGNORECASE))
+      pseudo_mentions = len(re.findall(re.escape(p), origtext, re.IGNORECASE)) + len(re.findall(re.escape(p), pseudonyms[p], re.IGNORECASE))
       if RE_USERLINK.match(p):
         mentions_per_link = len(re.findall(re.escape(pseudonyms[p]), p, re.IGNORECASE))
         pseudo_mentions -= pseudo_mentions * mentions_per_link
@@ -163,7 +163,7 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
 
   if mcount>0:
     for p,v in mentions.items():
-      fuzzy[p]=fuzzy.get(p,0) + v/mcount
+      fuzzy[p]=fuzzy.get(p,0) + (v/mcount)*2
 
   if len(fuzzy)==0: #only if we still don't have fuzz
     if getSections:
