@@ -15,7 +15,7 @@ RE_ENTITLED = re.compile('==+\s*(\[\[[Uu]ser.*?\])\s*=+=')
 RE_MEETUP = re.compile('\{\{\s*[Mm]eet-up.*?\|\s*name\s*=\s*(.+?)(?:\}|\|\s*\w+\s*=)', re.DOTALL)
 RE_FIRST = re.compile('^.*?(\[\[[Uu]ser.+?\]\])', re.DOTALL)
 
-improbablenames = ["and", "i", "we", "the", "one", "all attendees", "everyone"]
+improbablenames = ["and", "i", "we", "the", "one", "all attendees", "everyone", "his", "her"]
 
 def fuzzyadd(a,b): #combine two fuzzy values
   return (a+b)/2.0
@@ -66,6 +66,12 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
   usernames  = {}
 
   if "[[Category:Not reached - Did not attempt]]" in text:
+    return []
+
+  if "[[Category:Tagged for deletion]]" in text:
+    return []
+
+  if len(re.findall("\{\{\s*delete", text)) > 0:
     return []
 
   scoring = [
@@ -133,7 +139,8 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
 
   if len(fuzzy)==0: #only if we still don't have fuzz
     print "FAIL", page	
-    sys.exit(1)
+#    sys.exit(1)
+    return []
     history = page.getVersionHistory(getAll=True)
     #compare the edit history with the page content
     editors = [change[2] for change in history]
@@ -142,7 +149,7 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
         fuzzy[editor]=0.5
 
   if len(fuzzy)==0: #only if we still don't have fuzz
-    sys.exit(1)
+    return []
     wlh = [r for r in page.getReferences()]
     #get user pages from the reference counter
     for l in wlh:

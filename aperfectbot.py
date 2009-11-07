@@ -471,11 +471,10 @@ def parse_planning_page(page, db):
     if((people_sec_text == None) or (len(people_text) == 0)):
         people_text = get_user_list(text)
 
-#    people_list = identifyParticipants(text, page)
-#    people_text_join = ", ".join(people_list)
+    people_list = identifyParticipants(text, page, getLinks = True)
+    people_text_join = ", ".join(people_list)
 
-#    print people_text + "::"
-#    print people_text_join
+    print people_text,"::",people_text_join
 
 #Generate the Location text
 #First look in appropriately named "where" sections
