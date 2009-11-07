@@ -5,19 +5,22 @@ import wikipedia, re, string
 import math, sys
 
 
-re_userlink = '\[\[[Uu]ser\s*:\s*(.+?)\s*(?:\|\s*(?:.+?)\s*)?\]\]'
-re_userlist = '(?:(?:'+re_userlink+'|(\S+))(?: ?and ?|, ?| ?& ?)?)+'
-re_option   = '\s*([^=]+?)(?:\}|\|\s*\w+\s*=)'
 RE_LINKS = re.compile('(\[\[[Uu]ser *: *(.+?) *(?:\| *(.+?) *)?\]\])')
 
+re_userlink = '\[\[[Uu]ser\s*:\s*(.+?)\s*(?:\|\s*(?:.+?)\s*)?\]\]'
+re_enumerator = '(?: ?and ?|, ?| ?& ?)'
+re_userlist = '(?:(?:'+re_userlink+'|(\S+))'+re_enumerator+'?)+'
+re_strictlylist = '('+re_userlink+'(?:'+re_enumerator+re_userlink+')+)'
+re_linkorlist = '(?:'+re_userlink+'|'+re_strictlylist+')'
+re_option   = '\s*([^=]+?)(?:\}|\|\s*\w+\s*=)'
 RE_USERLINK = re.compile(re_userlink)
 RE_LISTED = re.compile('\s*[\*]\s*'+re_userlist+'[^\n]*')
 RE_LISTEDLINK = re.compile('\s*[\*].*?'+re_userlink+'[^\n]*')
 RE_RIBBONBEARER = re.compile('\{\{.*?\|\s*name\s*='+re_option, re.DOTALL)
 RE_CARDRECIPIENT = re.compile('recipient ?='+re_option)
-RE_ENTITLED = re.compile('==+\s*'+re_userlink+'\s*=+=')
+RE_ENTITLED = re.compile('==+\s*'+re_linkorlist+'\s*=+=')
 RE_MEETUP = re.compile('\{\{\s*[Mm]eet-up.*?\|\s*name\s*='+re_option, re.DOTALL)
-RE_FIRST = re.compile('^.*?(\[\[[Uu]ser.+?\]\])', re.DOTALL)
+RE_FIRST = re.compile('^.*?'+re_userlink, re.DOTALL)
 
 improbablenames = ["and", "i", "we", "the", "one", "all attendees", "everyone", "his", "her"]
 
