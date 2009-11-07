@@ -476,6 +476,8 @@ def parse_planning_page(page, db):
 
     print people_text,"::",people_text_join
 
+    #people_text = people_text_join
+
 #Generate the Location text
 #First look in appropriately named "where" sections
     location_sec_text = getSectionRegex(text, "(location|where|about|the spot)\??")
