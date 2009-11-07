@@ -7,20 +7,32 @@ import math, sys
 
 RE_LINKS = re.compile('(\[\[[Uu]ser *: *(.+?) *(?:\| *(.+?) *)?\]\])')
 
+# anything within a [[User:x|y]] style link 
 re_userlink = '\[\[[Uu]ser\s*:\s*(.+?)\s*(?:\|\s*(?:.+?)\s*)?\]\]'
-re_enumerator = '(?: ?and ?|, ?| ?& ?)'
-re_userlist = '(?:(?:'+re_userlink+'|(\S+))'+re_enumerator+'?)+'
-re_strictlylist = '('+re_userlink+'(?:'+re_enumerator+re_userlink+')+)'
+# the same, or just an arbitrary string
+re_maybelink = '(?:'+re_userlink+'|(\S+))'
+# any enumerator
+re_enumerator = '(?: and |, ?| ?& ?)'
+
+# a sequence of re_maybelinks, separated by re_enumerators
+re_maybelist = re_maybelink+'(?:'+re_enumerator+re_maybelink+')*'
+# a sequence of re_userlinks, separated by re_enumerators
+re_strictlylist = '(?:'+re_userlink+'(?:'+re_enumerator+re_userlink+')+)'
+# either a re_userlink, or a re_strictlylist
 re_linkorlist = '(?:'+re_userlink+'|'+re_strictlylist+')'
+
+# an option to a wiki template
 re_option   = '\s*([^=]+?)(?:\}|\|\s*\w+\s*=)'
+
 RE_USERLINK = re.compile(re_userlink)
-RE_LISTED = re.compile('\s*[\*]\s*'+re_userlist+'[^\n]*')
+RE_LISTED = re.compile('\s*[\*]\s*'+re_maybelist+'[^\n]*')
 RE_LISTEDLINK = re.compile('\s*[\*].*?'+re_userlink+'[^\n]*')
 RE_RIBBONBEARER = re.compile('\{\{.*?\|\s*name\s*='+re_option, re.DOTALL)
 RE_CARDRECIPIENT = re.compile('recipient ?='+re_option)
 RE_ENTITLED = re.compile('==+\s*'+re_linkorlist+'\s*=+=')
 RE_MEETUP = re.compile('\{\{\s*[Mm]eet-up.*?\|\s*name\s*='+re_option, re.DOTALL)
 RE_FIRST = re.compile('^.*?'+re_userlink, re.DOTALL)
+RE_COMMONPLACES = re.compile('(?:reached by)\s+'+re_maybelist+'\s*\.')
 
 improbablenames = ["and", "i", "we", "the", "one", "all attendees", "everyone", "his", "her"]
 
@@ -100,6 +112,7 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
     (RE_ENTITLED, 20),
     (RE_MEETUP, 10),
     (RE_FIRST, 2),
+    (RE_COMMONPLACES, 1),
   ]
 
   if getSections:
