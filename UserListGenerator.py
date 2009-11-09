@@ -10,11 +10,11 @@ RE_LINKS = re.compile('(\[\[[Uu]ser *: *(.{1,%i}?) *(?:\| *(.+?) *)?\]\])' % MAX
 
 # anything within a [[User:x|y]] style link 
 re_userlink = '\[\[[Uu]ser\s*:\s*(.{1,%i}?)\s*(?:\|\s*(?:.+?)\s*)?\]\]' % MAX_USERNAME_LENGTH
-re_userstring = '(\w{1,%i})' % MAX_USERNAME_LENGTH
+re_userstring = '([\w^,&\']{1,%i})' % MAX_USERNAME_LENGTH
 # the same, or just an arbitrary string
 re_maybelink = '(?:'+re_userlink+'|'+re_userstring+')'
 # any enumerator
-re_enumerator = '(?: and | with |, ?| ?& ?)'
+re_enumerator = "(?:,| and | with |&)"
 
 # a sequence of re_maybelinks, separated by re_enumerators
 re_maybelist = re_maybelink+'(?:'+re_enumerator+re_maybelink+')*'
@@ -38,7 +38,7 @@ RE_COMMONPLACES = re.compile('(?:reached by)\s+('+re_maybelist+')\s*\.')
 RE_BOLDED = re.compile('\\\'{3}('+re_maybelist+')') #does not work!
 RE_PARALIST = re.compile('\n\n('+re_maybelink+').*?(?=\n\n)', re.MULTILINE ^ re.DOTALL)
 
-improbablenames = ["", " ", "a", "and", "i", "i'll", "we", "the", "one", "all attendees", "everyone", "his", "her", "probably"]
+improbablenames = ["", " ", "a", "and", "i", "i'll", "we", "the", "one", "all attendees", "everyone", "his", "her", "probably", "drag", "drag-along", "1", "2", "3", "4", "5"]
 
 debug_fuzz = None
 debug_links = None
@@ -67,10 +67,10 @@ def unscorify(word):
   return word.replace("_"," ")
 
 def splitgrouped(word):
-  fail = re.findall("\[User:[^]]+(?:,| and | with |&).*?\]", word)
+  fail = re.findall("\[User:[^]]+"+re_enumerator+".*?\]", word)
   if fail: #TODO: be smarter when splitting this
     return [word]
-  return re.split(",| and | with |&", word)
+  return re.split(re_enumerator, word)
 
 def flatten(l, ltypes=(list, tuple)):
     """flatten an array or list"""
@@ -120,7 +120,7 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
   ]
 
   if getSections:
-    sections = getSectionRegex(text, "(participants?|(the\s)?people|attend[esanc]+|adventurers?|geohashers?|reached)\??", True)
+    sections = getSectionRegex(text, "(participants?|(the\s)?people|(?<!intended )attend[esanc]+|adventurers?|geohashers?|reached)\??", True)
     if sections:
       scoring.append((RE_LISTED, 3))
       scoring.append((RE_LISTEDLINK, 4))
