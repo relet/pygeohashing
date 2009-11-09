@@ -27,16 +27,16 @@ re_linkorlist = '(?:'+re_userlink+'|'+re_strictlylist+')'
 re_option   = '\s*([^=]+?)(?:\}|\|\s*\w+\s*=)'
 
 RE_USERLINK = re.compile(re_userlink)
-RE_LISTED = re.compile('\s*[\*]\s*'+re_maybelist+'[^\n]*')
-RE_LISTEDLINK = re.compile('\s*[\*].*?'+re_userlink+'[^\n]*')
+RE_LISTED = re.compile('\s*[\*]\s*('+re_maybelist+')[^\n]*')
+RE_LISTEDLINK = re.compile('\s*[\*].*?('+re_userlink+')[^\n]*')
 RE_RIBBONBEARER = re.compile('\{\{.*?\|\s*name\s*='+re_option, re.DOTALL)
 RE_CARDRECIPIENT = re.compile('recipient ?='+re_option)
-RE_ENTITLED = re.compile('==+\s*'+re_linkorlist+'\s*=+=')
+RE_ENTITLED = re.compile('==+\s*('+re_linkorlist+')\s*=+=')
 RE_MEETUP = re.compile('\{\{\s*[Mm]eet-up.*?\|\s*name\s*='+re_option, re.DOTALL)
 RE_FIRST = re.compile('^.*?'+re_userlink, re.DOTALL)
-RE_COMMONPLACES = re.compile('(?:reached by)\s+'+re_maybelist+'\s*\.')
-RE_BOLDED = re.compile('\\\'{3}'+re_maybelist) #does not work!
-RE_PARALIST = re.compile('\n\n'+re_maybelink+'.*?(?=\n\n)', re.MULTILINE ^ re.DOTALL)
+RE_COMMONPLACES = re.compile('(?:reached by)\s+('+re_maybelist+')\s*\.')
+RE_BOLDED = re.compile('\\\'{3}('+re_maybelist+')') #does not work!
+RE_PARALIST = re.compile('\n\n('+re_maybelink+').*?(?=\n\n)', re.MULTILINE ^ re.DOTALL)
 
 improbablenames = ["", " ", "a", "and", "i", "i'll", "we", "the", "one", "all attendees", "everyone", "his", "her", "probably"]
 
@@ -122,7 +122,7 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
   if getSections:
     sections = getSectionRegex(text, "(participants?|(the\s)?people|attend[esanc]+|adventurers?|geohashers?|reached)\??", True)
     if sections:
-      scoring.append((RE_LISTED, 2))
+      scoring.append((RE_LISTED, 3))
       scoring.append((RE_LISTEDLINK, 4))
       scoring.append((RE_PARALIST, 1))
       text = sections
