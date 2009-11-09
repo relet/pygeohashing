@@ -27,7 +27,8 @@ for test in library:
   result_parts = identifyParticipants(report, wikipedia.Page(site, test), None) #we might have to connect to the wiki to get the history / what-links-here
   result_parts = map(string.lower, result_parts)  
 
-  parts_debug = {}
+  parts_debug = getDebugFuzz()
+
   links_debug = {}
   links_debug_links = {}
 
@@ -37,7 +38,10 @@ for test in library:
   for part in correct_parts:
     total += 1
     if not part in result_parts:
-      print("OH NOES! We didn't identify %s participating in %s for names test." % (part, test))
+      reason = "(Identification fail)"
+      if part.lower() in parts_debug.keys():
+        reason = "(Wrong rating)"
+      print("OH NOES! We didn't identify %s participating in %s for names test. %s" % (part, test, reason))      
       failcount += 1
       failed = True
   for part in result_parts:
@@ -48,7 +52,6 @@ for test in library:
       failed = True
   if failed:
     any_failed = True
-    parts_debug = getDebugFuzz()
 
   result_links = identifyParticipants(report, wikipedia.Page(site, test), True) #we might have to connect to the wiki to get the history / what-links-here
   #We want caps-specific results for links
