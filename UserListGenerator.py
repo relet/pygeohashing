@@ -4,12 +4,13 @@
 import wikipedia, re, string
 import math, sys
 
+MAX_USERNAME_LENGTH = 31
 
-RE_LINKS = re.compile('(\[\[[Uu]ser *: *(.+?) *(?:\| *(.+?) *)?\]\])')
+RE_LINKS = re.compile('(\[\[[Uu]ser *: *(.{1,%i}?) *(?:\| *(.+?) *)?\]\])' % MAX_USERNAME_LENGTH)
 
 # anything within a [[User:x|y]] style link 
-re_userlink = '\[\[[Uu]ser\s*:\s*(.+?)\s*(?:\|\s*(?:.+?)\s*)?\]\]'
-re_userstring = '(\w{1,64})' #how long would a reasonable username be?
+re_userlink = '\[\[[Uu]ser\s*:\s*(.{1,%i}?)\s*(?:\|\s*(?:.+?)\s*)?\]\]' % MAX_USERNAME_LENGTH
+re_userstring = '(\w{1,%i})' % MAX_USERNAME_LENGTH
 # the same, or just an arbitrary string
 re_maybelink = '(?:'+re_userlink+'|'+re_userstring+')'
 # any enumerator
@@ -37,7 +38,7 @@ RE_COMMONPLACES = re.compile('(?:reached by)\s+'+re_maybelist+'\s*\.')
 RE_BOLDED = re.compile('\\\'{3}'+re_maybelist) #does not work!
 RE_PARALIST = re.compile('\n\n'+re_maybelink+'.*?(?=\n\n)', re.MULTILINE ^ re.DOTALL)
 
-improbablenames = ["", " ", "a", "and", "i", "i'll", "we", "the", "one", "all attendees", "everyone", "his", "her"]
+improbablenames = ["", " ", "a", "and", "i", "i'll", "we", "the", "one", "all attendees", "everyone", "his", "her", "probably"]
 
 debug_fuzz = None
 debug_links = None
@@ -121,7 +122,7 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
   if getSections:
     sections = getSectionRegex(text, "(participants?|(the\s)?people|attend[esanc]+|adventurers?|geohashers?|reached)\??", True)
     if sections:
-      scoring.append((RE_LISTED, 1))
+      scoring.append((RE_LISTED, 2))
       scoring.append((RE_LISTEDLINK, 4))
       scoring.append((RE_PARALIST, 1))
       text = sections
