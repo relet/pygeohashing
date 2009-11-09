@@ -13,7 +13,7 @@ re_userstring = '(\w{1,64})' #how long would a reasonable username be?
 # the same, or just an arbitrary string
 re_maybelink = '(?:'+re_userlink+'|'+re_userstring+')'
 # any enumerator
-re_enumerator = '(?: and |, ?| ?& ?)'
+re_enumerator = '(?: and | with |, ?| ?& ?)'
 
 # a sequence of re_maybelinks, separated by re_enumerators
 re_maybelist = re_maybelink+'(?:'+re_enumerator+re_maybelink+')*'
@@ -66,10 +66,10 @@ def unscorify(word):
   return word.replace("_"," ")
 
 def splitgrouped(word):
-  fail = re.findall("\[User:[^]]+(?:,| and |&).*?\]", word)
+  fail = re.findall("\[User:[^]]+(?:,| and | with |&).*?\]", word)
   if fail: #TODO: be smarter when splitting this
     return [word]
-  return re.split(",| and |&", word)
+  return re.split(",| and | with |&", word)
 
 def flatten(l, ltypes=(list, tuple)):
     """flatten an array or list"""
