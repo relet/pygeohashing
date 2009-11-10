@@ -21,14 +21,14 @@ re_maybelist = re_maybelink+'(?:'+re_enumerator+re_maybelink+')*'
 # a sequence of re_userlinks, separated by re_enumerators
 re_strictlylist = '(?:'+re_userlink+'(?:'+re_enumerator+re_userlink+')+)'
 # either a re_userlink, or a re_strictlylist
-re_linkorlist = '(?:'+re_userlink+'|'+re_strictlylist+')'
+re_linkorlist = '(?:'+re_strictlylist+'|'+re_userlink+')'
 
 # an option to a wiki template
 re_option   = '\s*([^=]+?)(?:\}|\|\s*\w+\s*=)'
 
 RE_USERLINK = re.compile(re_userlink)
 RE_LISTED = re.compile('\s*[\*]\s*('+re_maybelist+')[^\n]*')
-RE_LISTEDLINK = re.compile('\s*[\*].*?('+re_userlink+')[^\n]*')
+RE_LISTEDLINK = re.compile('\s*[\*].*?('+re_linkorlist+')[^\n]*')
 RE_RIBBONBEARER = re.compile('\{\{.*?\|\s*name\s*='+re_option, re.DOTALL)
 RE_CARDRECIPIENT = re.compile('recipient ?='+re_option)
 RE_ENTITLED = re.compile('==+\s*('+re_linkorlist+')\s*=+=')
@@ -38,7 +38,7 @@ RE_COMMONPLACES = re.compile('(?:reached by)\s+('+re_maybelist+')\s*\.')
 RE_BOLDED = re.compile('\\\'{3}('+re_maybelist+')') #does not work!
 RE_PARALIST = re.compile('\n\n('+re_maybelink+').*?(?=\n\n)', re.MULTILINE ^ re.DOTALL)
 
-improbablenames = ["", " ", "a", "and", "i", "i'll", "we", "the", "one", "all attendees", "everyone", "his", "her", "probably", "drag", "drag-along", "1", "2", "3", "4", "5"]
+improbablenames = ["", " ", "a", "and", "i", "i'll", "we", "the", "one", "two", "three", "all of us", "all attendees", "everyone", "his", "her", "probably", "drag", "drag-along", "1", "2", "3", "4", "5"]
 
 debug_fuzz = None
 debug_links = None
@@ -178,8 +178,6 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
       return identifyParticipants(origtext, page, getLinks, getSections = False)
 
   if len(fuzzy)==0: #only if we still don't have fuzz
-    print "FAIL", page	
-    return []
     history = page.getVersionHistory(getAll=True)
     #compare the edit history with the page content
     editors = [change[2] for change in history]
@@ -188,7 +186,6 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
         fuzzy[editor]=0.5
 
   if len(fuzzy)==0: #only if we still don't have fuzz
-    return []
     wlh = [r for r in page.getReferences()]
     #get user pages from the reference counter
     for l in wlh:
