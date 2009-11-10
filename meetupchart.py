@@ -7,7 +7,7 @@
    and generates shoebot code to display a xkcd#657-style graph of the expeditions
 """
 
-import datetime, wikipedia, re, sys, yaml
+import datetime, wikipedia, re, sys, yaml, urllib
 from random import random
 from catlib import Category
 from UserListGenerator import getSection, identifyParticipants, getDebugFuzz
@@ -21,7 +21,7 @@ COL  = 5
 FONT = 10
 LEFTMARGIN = 300
 RIGHTMARGIN = 50
-MIN_EXPEDITIONS = 5
+MIN_EXPEDITIONS = 5 
 
 def dump(filename, data):
   yamldump = open(filename,'w')          # store the data set we have last been working on
@@ -78,8 +78,18 @@ except:
   print "No meetup chart data is available. We'll have to fetch everything from the wiki. This will take a good while."
   pass
   
+# these are the ones we can't fix currently
+addfails  = [("John", "2008-06-07", "30 -84")]
+skipfails = [("NWoodruff", "2009-08-31", "50 11"), 
+             ("archchancellor", "2008-06-01", "37 -121"),
+             ("Tom Wuttke", "2008-06-16", "37 -122"),
+             ("Danatar", "2008-08-26", "51 7")]
+  
 if not data:
+  data.extend(addfails)
   for location in locations:
+    if "50 -1" in str(location):
+      continue
     pages = location.articlesList()
     for page in pages:
       title = page.title()
@@ -105,10 +115,15 @@ if not data:
           continue
         if user.lower() in hadthese:
           continue
+        if (user, date, latlon) in skipfails:
+          continue
         hadthese.append(user.lower())
         data.append((user, date, latlon))
       print title, hadthese, getDebugFuzz()
     dump("meetupchart.data",data) #keep backing it up, you'll never know...
+
+userlist = urllib.urlopen("http://wiki.xkcd.com/wgh/index.php?title=Special:Listusers&limit=5000").read().lower()
+users = re.findall("title=\"user:(.*?)\"", userlist)
 
 people   = {}
 places   = []
@@ -124,6 +139,9 @@ for event in data:
   if date < "2008-05":
     continue
   peop = peop.lower().strip().replace("_"," ")
+  if not peop.replace("&","&amp;") in users:
+    print "%s is no user" % peop
+    continue
   if peop in people:
     people[peop].append(event)
   else:
@@ -134,9 +152,6 @@ for event in data:
     earliest=date
   if date>latest:
     latest=date
-
-#print earliest
-#sys.exit(1)
 
 duration = (datetime.datetime.strptime(latest, DATEFORMAT) - datetime.datetime.strptime(earliest, DATEFORMAT)).days
 girth = len(places)
@@ -195,7 +210,18 @@ for i,place in enumerate(places):
 
 print("strokewidth(1.2)")
 
-   
+labels = []
+def putlabel(s,x,y,up=True):
+  blocked = False
+  for label in labels:
+    if abs(label[0]-x)<50 and abs(label[1]-y)<ROW:
+      blocked = True 
+  if blocked:
+    putlabel(s,x,y+(up and -ROW or ROW),up)
+  else:
+    labels.append((x,y))
+    print("text(\"%s\", %i, %i)" % (s, x, y))
+
 for peop in people.keys():
   events = people[peop]
   if len(events)< MIN_EXPEDITIONS:
@@ -204,13 +230,13 @@ for peop in people.keys():
   lastx, lasty = xy(events[0][1], events[0][2])  
 
   print("stroke(%f, %f, %f)" % (random()*3/4, random()*3/4, random()*3/4)) #avoid full white
-  print("text(\"+%s\", %i, %i)" % (events[0][0].encode("utf-8"), lastx, lasty-3))
+  putlabel("+"+events[0][0].replace("\"","\\\"").encode("utf-8"), lastx, lasty-3)
   print("oval(%i,%i,3,3)" % (lastx-1,lasty-1))
   print("beginpath(%i,%i)" % (lastx, lasty))
-  for event in events[1:]:
+  for i,event in enumerate(events[1:]):
     x,y = xy(event[1],event[2])
-    if abs(y-lasty)>300:
-      print("text(\"%s\", %i, %i)" % (events[0][0].encode("utf-8"), x, y+10))
+    if abs(y-lasty)>300 and i<len(events)-2:
+      putlabel(events[0][0].replace("\"","\\\"").encode("utf-8"), x, y+10, up=False)
     x1,y1 = lastx + (x-lastx)/2, lasty
     x2,y2 = lastx + (x-lastx)/2, y
     print("curveto(%i,%i,%i,%i,%i,%i)" % (x1,y1,x2,y2,x,y))
@@ -218,5 +244,5 @@ for peop in people.keys():
     lastx, lasty = x,y
   print("moveto (%i,%i)" % xy(events[0][1], events[0][2]))
   print("endpath()")
-  print("text(\"-%s\", %i, %i)" % (events[-1][0].encode("utf-8"), lastx, lasty-3))
+  putlabel("-"+events[-1][0].replace("\"","\\\"").encode("utf-8"), lastx, lasty-3)
   

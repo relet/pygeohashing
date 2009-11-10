@@ -7,7 +7,6 @@ import wikipedia
 re_grat = re.compile('\[\[(.*?)\| *([0-9\-]+, *[0-9\-]+) *\(.*?\) *\]\]')
 
 def inc(num):
-  """increase a graticule number by one, wrapping correctly between -0, 0 and 179, -179"""
   if num == "-0":
     return "0"
   if num=="179":
@@ -18,7 +17,6 @@ def inc(num):
     return(str(int(num)+1))
 
 def dec(num):
-  """decrease a graticule number by one, wrapping correctly between 0, -0 and -179, 179"""
   if num=="-179":
     return "179"
   elif num=="0":
@@ -27,7 +25,6 @@ def dec(num):
     return(str(int(num)-1))
 
 def grow(latlon):
-  """return all neighbours of a given graticule"""
   lat, lon = latlon
   return [(dec(lat), dec(lon)),
           (dec(lat), lon),
@@ -84,7 +81,7 @@ class GraticuleDatabase:
       try:
         return self.data[lat][lon]
       except:
-        return None
+        return ("%s,%s" % (lat,lon))
 
     def getAllKeys(self):
       all = []
