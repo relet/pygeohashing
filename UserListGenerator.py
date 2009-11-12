@@ -140,6 +140,7 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
       pseudonyms[part[2].lower()] = part[1].lower()
       usernames [part[2].lower()] = part[1]
       userlinks [part[2].lower()] = part[0]
+      
 
   for rex, score in scoring:
     match = flatten(rex.findall(text))

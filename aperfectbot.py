@@ -133,8 +133,8 @@ def getExpeditionSummaries(expPages, db, dates, firstDate):
     for page in expPages:
         if(re.match("\d{4}-\d{2}-\d{2} [-0-9]{1,4} [-0-9]{1,4}$", page.title())):
             pageNameParts = re.split("[ _]+", page.title())
-            if (firstDate == None) or (pageNameParts[0] > firstDate):
-                print "Parsing page",expPages.index(page),"of",len(expPages)
+            if (firstDate == None) or (pageNameParts[0] >= firstDate):
+                print "Parsing page",expPages.index(page),"of",len(expPages),":",page.title()
                 exped = Expedition.Expedition(page.site(), page.title(), db)
                 if not exped.getDate() in allSummaries:
                     allSummaries[exped.getDate()] = []
@@ -278,7 +278,7 @@ def main():
     page_write(recent_exp_page, summary_text, enwiktsite)
 
 #get rid of the old dates from the update list
-    remove_dates(enwiktsite, old_dates.keys())
+    remove_dates(enwiktsite, old_date_list)
 
 def get_all_category_pages(site, title, catdb):
     cat = category.catlib.Category(site, title)

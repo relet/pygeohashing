@@ -24,7 +24,11 @@ RE_SECTIONHEADER = re.compile("=+.*?=+", re.DOTALL)
 RE_BULLETS = re.compile("^[*:]+", re.DOTALL)
 RE_THISHASHPOINT = re.compile("^(The|This|Today's)\s+?(location|hash ?point|geo ?hash)\s+?(is)?", re.IGNORECASE)
 RE_NOTOC = re.compile("__NOTOC__", re.DOTALL)
-
+RE_BIKE = re.compile("((bike)|(bicycle))", re.IGNORECASE)
+RE_BUS = re.compile("bus", re.IGNORECASE)
+RE_TRAIN = re.compile("train", re.IGNORECASE)
+RE_STRIPCAT = re.compile("Category:")
+RE_CATNOTREACH = re.compile("Category:Not reached - ")
 
 class Expedition:
   '''
@@ -54,15 +58,37 @@ class Expedition:
       else:
         self.peopleText = u"Someone went"
     self.location = self._getLocationText(self.text)
-    self.transport = ""
-    self.reached = ""
-    self.failReason = ""
+    self.transport = self._getTransportText(self.text)
+    self.reached = False
+
+    self.categories = self.page.categories()
+    reasons = []
+    for cat in self.categories:
+      if ("Category:Coordinates reached" == cat.title()):
+        self.reached = True
+
+      if (RE_CATNOTREACH.search(cat.title()) != None):
+        reasons.append(RE_CATNOTREACH.sub("", cat.title()))
+
+    self.failReason = ", ".join(reasons)
 
     if formats:
       self.formats = formats
     else:
       self.formats = {}
       self.formats[""] = "DATE - GRATADD - GRATNAME - PEOPLE - LOCATION - TRANSPORT - REACHED - REASON - LINK\n"
+
+  def _getTransportText(self, fullText):
+    transportList = []
+    regexArr = [
+      (RE_BIKE, "Bicycle"),
+      (RE_BUS, "Bus"),
+      (RE_TRAIN, "Train")
+    ]
+    for rex,text in regexArr:
+      if (rex.search(fullText) != None):
+        transportList.append(text) 
+    return ", ".join(transportList)
 
   def getDate(self):
     return self.date
