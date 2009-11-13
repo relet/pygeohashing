@@ -7,7 +7,7 @@ import sys, category, datetime
 import hashlib, struct, urllib
 import time
 from UserListGenerator import *
-import Expedition
+import Expedition, ExpeditionSummaries
 
 #ccodes  = {}
 #for line in open("countryCodes.txt","r"):
@@ -68,7 +68,7 @@ def holiday_lookup(date):
         return date
 
 #Get up to 3 update requests from the page
-def get_old_dates(site):
+def get_old_dates(site, db):
     page = wikipedia.Page(site, u"User:AperfectBot/Update_requests")
     all_text = page.get()
 
@@ -92,6 +92,11 @@ def get_old_dates(site):
     for i in range(0, min(len(matches), 3)):
         match_list.append(matches[i][1])
     fh.close()
+
+    for date in match_list:
+        ExpeditionSummaries.ExpeditionSummaries(site, date, db)
+
+    remove_dates(site, match_list)
 
     return match_list
 
@@ -170,73 +175,48 @@ def main():
     catdb = category.CategoryDatabase()
 
     pp_list2 = get_all_category_pages(enwiktsite, u"Category:Expedition_planning", catdb)
-    pp_list = []
 
 #Produce a list of all pages from 3 weekdays ago through when coordinates are available
 #  by looking at the [[Category:Meetup on YYYY-MM-DD]] pages
     all_text = u""
     first_date_obj = get_last_day_avail(datetime.date.today() + datetime.timedelta(7))
     last_date_obj = first_date_obj
-    all_dates = {}
     cur_dates = []
     for i in range(0,3):
         while (first_date_obj > datetime.date.today()):
-            pp_list += get_all_category_pages(enwiktsite, u"Meetup on " + first_date_obj.isoformat(), catdb)
-            all_dates[first_date_obj.isoformat()] = []
             cur_dates.append(first_date_obj.isoformat())
+            ExpeditionSummaries.ExpeditionSummaries(enwiktsite, first_date_obj.isoformat(), db)
             first_date_obj = first_date_obj - datetime.timedelta(1)
 
-        pp_list += get_all_category_pages(enwiktsite, u"Meetup on " + first_date_obj.isoformat(), catdb)
-        all_dates[first_date_obj.isoformat()] = []
         cur_dates.append(first_date_obj.isoformat())
+        ExpeditionSummaries.ExpeditionSummaries(enwiktsite, first_date_obj.isoformat(), db)
         first_date_obj = first_date_obj - datetime.timedelta(1)
 
         while (first_date_obj.weekday() > 4):
-            pp_list += get_all_category_pages(enwiktsite, u"Meetup on " + first_date_obj.isoformat(), catdb)
-            all_dates[first_date_obj.isoformat()] = []
             cur_dates.append(first_date_obj.isoformat())
+            ExpeditionSummaries.ExpeditionSummaries(enwiktsite, first_date_obj.isoformat(), db)
             first_date_obj = first_date_obj - datetime.timedelta(1)
 
-    pp_list += get_all_category_pages(enwiktsite, u"Meetup on " + first_date_obj.isoformat(), catdb)
-    all_dates[first_date_obj.isoformat()] = []
     cur_dates.append(first_date_obj.isoformat())
+    ExpeditionSummaries.ExpeditionSummaries(enwiktsite, first_date_obj.isoformat(), db)
     first_date = first_date_obj.isoformat()
 
+    remove_dates(enwiktsite, cur_dates)
+
 #Get a list of old date pages to update
-    old_date_list = get_old_dates(enwiktsite)
-
-    old_dates = {}
-    for i in range(0, len(old_date_list)):
-        old_dates[old_date_list[i]] = []
-
-    pp_old_list = []
-    for i in old_dates.keys():
-        pp_old_list += get_all_category_pages(enwiktsite, u"Meetup on " + i, catdb)
-
-
-#This looks at the pages in [[Category:Meetup on YYYY-MM-DD]]
-#  and produces the summaries for them
-    all_dates = getExpeditionSummaries(pp_list, db, cur_dates, first_date)
+    old_date_list = get_old_dates(enwiktsite, db)
 
 #This looks at the pages in [[Category:Expedition planning]]
 #  and produces the summaries for all the pages for far in the future
-    plan_dates = getExpeditionSummaries(pp_list2, db, cur_dates, (last_date_obj+datetime.timedelta(1)).isoformat())
+    plan_dates = getExpeditionSummaries(pp_list2, db, None, (last_date_obj+datetime.timedelta(1)).isoformat())
     for i in plan_dates.keys():
-        if (len(plan_dates[i]) > 0):
-            for j in plan_dates[i]:
-                all_dates[i].append(j)
-
-#This looks at old expeditions pages in [[Category:Meetup on YYYY-MM-DD]]
-#  and produces the summaries for them
-    old_dates = getExpeditionSummaries(pp_old_list, db, None, None)
+        cur_dates.append(i)
 
     if check_banana(enwiktsite) != 0:
         return 1
 
-#Create the [[Template:Expedition_summaries/YYYY-MM-DD]] pages
-    putExpeditionSummaries(all_dates, enwiktsite)
-#Create the old [[Template:Expedition_summaries/YYYY-MM-DD]] pages
-    putExpeditionSummaries(old_dates, enwiktsite)
+#Create the [[Template:Expedition_summaries/YYYY-MM-DD]] pages for planning page dates
+    putExpeditionSummaries(plan_dates, enwiktsite)
 
 #Build up the text for [[Template:Recent_expeditions]]
     recent_expedition_page_name = u"Template:Recent_expeditions"
@@ -252,7 +232,7 @@ def main():
     summary_text = u""
     summary_text += u"<noinclude>__NOTOC__</noinclude>\n"
 
-    date_keys = all_dates.keys()
+    date_keys = cur_dates
     date_keys.sort()
     date_keys.reverse()
     if (date_keys[0] > last_date_obj.isoformat()):
@@ -277,8 +257,6 @@ def main():
     recent_exp_page = wikipedia.Page(enwiktsite, recent_expedition_page_name)
     page_write(recent_exp_page, summary_text, enwiktsite)
 
-#get rid of the old dates from the update list
-    remove_dates(enwiktsite, old_date_list)
 
 def get_all_category_pages(site, title, catdb):
     cat = category.catlib.Category(site, title)
