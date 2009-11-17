@@ -40,32 +40,41 @@ class GraticuleDatabase:
     '''
     This is a hashtable of graticules indexed lat->lon->(name, country)
     '''
+
+    def parseGraticulePage(self, page):
+      text = page.get(get_redirect = False)
+      
+      result = re_grat.findall(text)
+      for match in result:
+        page, grat = match
+        lat, lon = grat.split(", ")
+        if not lat in self.data:
+          self.data[lat]={}
+        if grat in page:
+          name = page
+          country = reduce(lambda x,y:x+" "+y, page.split(" ")[0:-2])
+        elif "," in page:
+          cut = page.split(", ")
+          name = cut[0]
+          country = cut[-1]
+        else:
+          name = page
+          country = None
+        self.data[lat][lon] = (page, name, country)
+
     def __init__(self, filename = None):
       if filename:
         self.load(filename)
       else:
         site = wikipedia.getSite()
-        page = wikipedia.Page(site, u"All Graticules")
-        text = page.get(get_redirect = False)
-      
         self.data = {}
-        result = re_grat.findall(text)
-        for match in result:
-          page, grat = match
-          lat, lon = grat.split(", ")
-          if not lat in self.data:
-            self.data[lat]={}
-          if grat in page:
-            name = page
-            country = reduce(lambda x,y:x+" "+y, page.split(" ")[0:-2])
-          elif "," in page:
-            cut = page.split(", ")
-            name = cut[0]
-            country = cut[-1]
-          else:
-            name = page
-            country = None
-          self.data[lat][lon] = (page, name, country)
+        self.parseGraticulePage(wikipedia.Page(site, u"All graticules/Eurasia"))
+        self.parseGraticulePage(wikipedia.Page(site, u"All graticules/Australasia"))
+        self.parseGraticulePage(wikipedia.Page(site, u"All graticules/Africa"))
+        self.parseGraticulePage(wikipedia.Page(site, u"All graticules/North America"))
+        self.parseGraticulePage(wikipedia.Page(site, u"All graticules/South America"))
+        self.parseGraticulePage(wikipedia.Page(site, u"All graticules/Oceans"))
+        self.parseGraticulePage(wikipedia.Page(site, u"All graticules/Antarctica"))
 
     def dump(self, filename):
       yamldump = open(filename,'w')          # store the data set we have last been working on
