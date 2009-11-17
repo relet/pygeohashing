@@ -139,9 +139,9 @@ for event in data:
   if date < "2008-05":
     continue
   peop = peop.lower().strip().replace("_"," ")
-  if not peop.replace("&","&amp;") in users:
-    print "%s is no user" % peop
-    continue
+  #if not peop.replace("&","&amp;") in users:
+    #print "%s is no user" % peop.encode("utf-8")
+  #  continue
   if peop in people:
     people[peop].append(event)
   else:
@@ -222,6 +222,18 @@ def putlabel(s,x,y,up=True):
     labels.append((x,y))
     print("text(\"%s\", %i, %i)" % (s, x, y))
 
+points = []
+def putpoint(p, lvl=3):
+  x, y = p
+  for point in points:
+    if (point[0]==x) and (point[1]==y):
+      lvl = point[2]
+      points.remove(point)
+      break
+  points.append((x,y,lvl+1))
+  return lvl
+
+
 for peop in people.keys():
   events = people[peop]
   if len(events)< MIN_EXPEDITIONS:
@@ -231,16 +243,18 @@ for peop in people.keys():
 
   print("stroke(%f, %f, %f)" % (random()*3/4, random()*3/4, random()*3/4)) #avoid full white
   putlabel("+"+events[0][0].replace("\"","\\\"").encode("utf-8"), lastx, lasty-3)
-  print("oval(%i,%i,3,3)" % (lastx-1,lasty-1))
+  dia = putpoint((lastx, lasty))
+  print("oval(%i,%i,%i,%i)" % (lastx-dia/2, lasty-dia/2, dia, dia))
   print("beginpath(%i,%i)" % (lastx, lasty))
   for i,event in enumerate(events[1:]):
     x,y = xy(event[1],event[2])
     if abs(y-lasty)>300 and i<len(events)-2:
       putlabel(events[0][0].replace("\"","\\\"").encode("utf-8"), x, y+10, up=False)
     x1,y1 = lastx + (x-lastx)/2, lasty
-    x2,y2 = lastx + (x-lastx)/2, y
+    x2,y2 = lastx + (x-lastx)/2, y    
     print("curveto(%i,%i,%i,%i,%i,%i)" % (x1,y1,x2,y2,x,y))
-    print("oval(%i,%i,3,3)" % (x-1,y-1))
+    dia = putpoint((x,y))
+    print("oval(%i,%i,%i,%i)" % (x-dia/2,y-dia/2, dia, dia))
     lastx, lasty = x,y
   print("moveto (%i,%i)" % xy(events[0][1], events[0][2]))
   print("endpath()")

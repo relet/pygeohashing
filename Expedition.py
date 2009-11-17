@@ -47,9 +47,15 @@ class Expedition:
       self.gratName = u"Unknown (" + self.lat + u", " + self.lon + u")"
     else:
       self.gratName = name_list[1] + u", " + name_list[2]
-    self.text = self.page.get()
+    if self.page.isRedirectPage():
+      self.text = u""
+      self.people = None
+      self.categories = []
+    else:
+      self.text = self.page.get()
+      self.people = identifyParticipants(self.text, self.page, getLinks = True)
+      self.categories = self.page.categories()
 
-    self.people = identifyParticipants(self.text, self.page, getLinks = True)
     if self.people:
       self.peopleText = ", ".join(self.people)
     else:
@@ -61,7 +67,6 @@ class Expedition:
     self.transport = self._getTransportText(self.text)
     self.reached = False
 
-    self.categories = self.page.categories()
     reasons = []
     for cat in self.categories:
       if ("Category:Coordinates reached" == cat.title()):
