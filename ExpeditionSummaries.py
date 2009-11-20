@@ -20,6 +20,7 @@ class ExpeditionSummaries:
         print "Parsing page",self.pageList.index(page),"of",len(self.pageList),":",page.title()
         exped = Expedition.Expedition(page.site(), page.title(), db)
         self.expedList.append(exped)
+#        print exped.subFormat()
         allSummaries.append(exped.getExpeditionSummary())
         
 
@@ -52,6 +53,12 @@ class ExpeditionSummaries:
     else:
       return 1
 
+  def getSubFormats(self, format = None, user = None, userComment = None):
+    formats = {}
+    for exped in self.expedList:
+      formats[exped.getPagename()] = exped.subFormat(format, user, userComment)
+
+    return formats
 
   def _getAllCategoryPages(self):
     cat = category.catlib.Category(self.site, "Meetup on " + self.date)

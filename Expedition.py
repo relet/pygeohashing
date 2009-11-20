@@ -2,15 +2,31 @@
 import re, wikipedia, datetime
 from UserListGenerator import *
 
-RE_DATE = re.compile('DATE');
-RE_GRATADD = re.compile('GRATADD');
-RE_GRATNAME = re.compile('GRATNAME');
-RE_PEOPLE = re.compile('PEOPLE');
-RE_LOCATION = re.compile('LOCATION');
-RE_TRANSPORT = re.compile('TRANSPORT');
-RE_REACHED = re.compile('REACHED');
-RE_REASON = re.compile('REASON');
-RE_LINK = re.compile('LINK');
+date_comment = u'<!--DATE-->'
+gratadd_comment = u'<!--GRATADD-->'
+gratname_comment = u'<!--GRATNAME-->'
+people_comment = u'<!--PEOPLE-->'
+location_comment = u'<!--LOCATION-->'
+transport_comment = u'<!--TRANSPORT-->'
+reached_comment = u'<!--REACHED-->'
+reason_comment = u'<!--REACHED-->'
+link_comment = u'<!--LINK-->'
+exped_comment = u'<!--EXPED-->'
+usertext_comment = u'<!--USERTEXT-->'
+
+RE_DATE = re.compile('DATE')
+RE_GRATADD = re.compile('GRATADD')
+RE_GRATNAME = re.compile('GRATNAME')
+RE_PEOPLE = re.compile('PEOPLE')
+RE_LOCATION = re.compile('LOCATION')
+RE_TRANSPORT = re.compile('TRANSPORT')
+RE_REACHED = re.compile('REACHED')
+RE_REASON = re.compile('REASON')
+RE_LINK = re.compile('LINK')
+RE_EXPED = re.compile('EXPED')
+RE_USERTEXT = re.compile('USERTEXT')
+
+RE_APECOMMENT = re.compile("\<\!\-\-APE (.*?)\-\-\>")
 
 RE_HTMLCOMMENT = re.compile("\<\!\-\-.*?\-\-\>+", re.DOTALL)
 RE_HTMLCOMMENT_BEGIN = re.compile("\<\!\-\-.*$", re.DOTALL)
@@ -34,7 +50,7 @@ class Expedition:
   '''
   This contains all important information about a given expedition
   '''
-  def __init__(self, site, pageName, db, formats = None):
+  def __init__(self, site, pageName, db, format = None):
     self.pageName = pageName
     self.page = wikipedia.Page(site, self.pageName)
     pageNameParts = re.split("[ _]+", self.pageName)
@@ -77,11 +93,10 @@ class Expedition:
 
     self.failReason = ", ".join(reasons)
 
-    if formats:
-      self.formats = formats
+    if format:
+      self.format = format
     else:
-      self.formats = {}
-      self.formats[""] = "DATE - GRATADD - GRATNAME - PEOPLE - LOCATION - TRANSPORT - REACHED - REASON - LINK\n"
+      self.format = u" date DATE - gratadd GRATADD - gratname GRATNAME - people PEOPLE - location LOCATION - transport TRANSPORT - reached REACHED - reason REASON - link LINK - exped EXPED - usertext USERTEXT\n"
 
   def _getTransportText(self, fullText):
     transportList = []
@@ -97,6 +112,9 @@ class Expedition:
 
   def getDate(self):
     return self.date
+
+  def getPagename(self):
+    return self.pageName
 
   def getExpeditionSummary(self):
     link = u"[[" + self.pageName + u"|" + self.gratName + u"]]"
@@ -184,20 +202,36 @@ class Expedition:
 
 
 
-  def subFormat(self):
+  def subFormat(self, format = None, user = None, userComment = None):
+    if (userComment == None):
+      userComment = u''
+    if self.reached:
+      reached = u"True"
+    else:
+      reached = u"False"
+    if self.people:
+      people = self.people
+    else:
+      people = [u""]
     formats = [
-      (RE_DATE,      "[["+self.date+"]]"),
-      (RE_GRATADD,   self.gratAdd),
-      (RE_GRATNAME,  "[["+self.gratName+"]]"),
-      (RE_PEOPLE,    ", ".join(self.people)),
-      (RE_LOCATION,  self.location),
-      (RE_TRANSPORT, self.transport),
-      (RE_REACHED,   self.reached),
-      (RE_REASON,    self.failReason)
-      (RE_LINK,   "[["+self.pageName+"]]"),
+      (RE_DATE,      date_comment      + self.date               + date_comment),
+      (RE_GRATADD,   gratadd_comment   + self.gratAdd            + gratadd_comment),
+      (RE_GRATNAME,  gratname_comment  + self.gratName           + gratname_comment),
+      (RE_PEOPLE,    people_comment    + ", ".join(people)       + people_comment),
+      (RE_LOCATION,  location_comment  + self.location           + location_comment),
+      (RE_TRANSPORT, transport_comment + self.transport          + transport_comment),
+      (RE_REACHED,   reached_comment   + reached                 + reached_comment),
+      (RE_REASON,    reason_comment    + self.failReason         + reason_comment),
+      (RE_LINK,      link_comment      + "[["+self.pageName+"]]" + link_comment),
+      (RE_EXPED,     exped_comment     + self.pageName           + exped_comment),
+      (RE_USERTEXT,  usertext_comment  + userComment             + usertext_comment),
     ]
-    formatted_out = self.format
+    formatted_out = u"<!--APE " + self.date + u" " + self.gratAdd + u"-->";
+    if format:
+      formatted_out += format
+    else:
+      formatted_out += self.format
     for rex, sub in formats:
       formatted_out = rex.sub(sub, formatted_out)
-    return fomatted_out
+    return formatted_out
 
