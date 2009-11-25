@@ -99,7 +99,7 @@ class GraticuleDatabase:
       result = []
       for lat in self.data.keys():
         for lon in self.data[lat].keys():
-          page = getLatLon(lat, lon)
+          page = self.getLatLon(lat, lon)
           if page:
             if search.lower() in page[0].lower():
               result.append(((lat,lon),page))
