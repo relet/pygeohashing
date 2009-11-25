@@ -86,11 +86,24 @@ class GraticuleDatabase:
       self.data = yaml.load(yamldump.read())   # in order to quickly identify changes in the future.
       yamldump.close()
 
-    def getLatLon(self, lat, lon):
+    def getLatLon(self, lat, lon, unknownIsNumeric = False):
       try:
         return self.data[lat][lon]
       except:
-        return ("%s,%s" % (lat,lon))
+        if unknownIsNumeric:
+          return ("%s,%s" % (lat,lon))
+        else:
+          return None
+          
+    def findAll(self, search):
+      result = []
+      for lat in self.data.keys():
+        for lon in self.data[lat].keys():
+          page = getLatLon(lat, lon)
+          if page:
+            if search.lower() in page[0].lower():
+              result.append(((lat,lon),page))
+      return result 
 
     def getAllKeys(self):
       all = []
