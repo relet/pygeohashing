@@ -9,7 +9,7 @@ people_comment = u'<!--PEOPLE-->'
 location_comment = u'<!--LOCATION-->'
 transport_comment = u'<!--TRANSPORT-->'
 reached_comment = u'<!--REACHED-->'
-reason_comment = u'<!--REACHED-->'
+reason_comment = u'<!--REASON-->'
 link_comment = u'<!--LINK-->'
 exped_comment = u'<!--EXPED-->'
 usertext_comment = u'<!--USERTEXT-->'
@@ -20,11 +20,13 @@ RE_GRATNAME = re.compile('GRATNAME')
 RE_PEOPLE = re.compile('PEOPLE')
 RE_LOCATION = re.compile('LOCATION')
 RE_TRANSPORT = re.compile('TRANSPORT')
-RE_REACHED = re.compile('REACHED')
+RE_REACHED = re.compile('REACHED:(.*?):(.*?):REACHED')
 RE_REASON = re.compile('REASON')
 RE_LINK = re.compile('LINK')
 RE_EXPED = re.compile('EXPED')
 RE_USERTEXT = re.compile('USERTEXT')
+RE_REACHED2 = re.compile('REACHED.*?REACHED')
+
 
 RE_APECOMMENT = re.compile("\<\!\-\-APE (.*?)\-\-\>")
 
@@ -96,7 +98,8 @@ class Expedition:
     if format:
       self.format = format
     else:
-      self.format = u" date DATE - gratadd GRATADD - gratname GRATNAME - people PEOPLE - location LOCATION - transport TRANSPORT - reached REACHED - reason REASON - link LINK - exped EXPED - usertext USERTEXT\n"
+      self.format = u" date DATE - gratadd GRATADD - gratname GRATNAME - people PEOPLE - location LOCATION - transport TRANSPORT - reached REACHED:Succeeded:Failed:REACHED - reason REASON - link LINK - exped EXPED - usertext USERTEXT"
+      self.format = u"|-\n|DATE||GRATADD||GRATNAME||PEOPLE||REACHED:[[EXPED|Succeeded]]:[[EXPED|Failed]]:REACHED||LOCATION"
 
   def _getTransportText(self, fullText):
     transportList = []
@@ -203,24 +206,44 @@ class Expedition:
 
 
   def subFormat(self, format = None, user = None, userComment = None):
+    userFound = False
     if (userComment == None):
       userComment = u''
     if self.reached:
-      reached = u"True"
+#      reached = u"True"
+      reached = u'\\1'
     else:
-      reached = u"False"
+#      reached = u"False"
+      reached = u'\\2'
+
+    people = []
     if self.people:
-      people = self.people
-    else:
+      if user:
+        for person in self.people:
+          if(re.search(u"User:\s*" + user + u"[|\]]", person) == None):
+            people.append(person)
+          else:
+#            print "Fuck you"
+            userFound = True
+      else:
+        people = self.people
+    if ((user != None) and (userFound != True)):
+#      print "Not returning shit, fuck you."
+      return None
+#    else:
+#      print "Why are you returning: user",user,"userFound",userFound
+    if (len(people) == 0):
       people = [u""]
+    
+
     formats = [
+      (RE_REACHED,   reached_comment   + reached                 + reached_comment),
       (RE_DATE,      date_comment      + self.date               + date_comment),
       (RE_GRATADD,   gratadd_comment   + self.gratAdd            + gratadd_comment),
       (RE_GRATNAME,  gratname_comment  + self.gratName           + gratname_comment),
       (RE_PEOPLE,    people_comment    + ", ".join(people)       + people_comment),
       (RE_LOCATION,  location_comment  + self.location           + location_comment),
       (RE_TRANSPORT, transport_comment + self.transport          + transport_comment),
-      (RE_REACHED,   reached_comment   + reached                 + reached_comment),
       (RE_REASON,    reason_comment    + self.failReason         + reason_comment),
       (RE_LINK,      link_comment      + "[["+self.pageName+"]]" + link_comment),
       (RE_EXPED,     exped_comment     + self.pageName           + exped_comment),

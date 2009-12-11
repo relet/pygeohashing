@@ -56,7 +56,10 @@ class ExpeditionSummaries:
   def getSubFormats(self, format = None, user = None, userComment = None):
     formats = {}
     for exped in self.expedList:
-      formats[exped.getPagename()] = exped.subFormat(format, user, userComment)
+      resultText = None
+      resultText = exped.subFormat(format, user, userComment)
+      if (resultText != None):
+        formats[exped.getPagename()] = resultText
 
     return formats
 
