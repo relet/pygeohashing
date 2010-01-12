@@ -38,7 +38,7 @@ RE_COMMONPLACES = re.compile('(?:reached by)\s+('+re_maybelist+')\s*\.')
 RE_BOLDED = re.compile('\\\'{3}('+re_maybelist+')') #does not work!
 RE_PARALIST = re.compile('\n\n('+re_maybelink+').*?(?=\n\n)', re.MULTILINE ^ re.DOTALL)
 
-improbablenames = ["", " ", "a", "and", "i", "i'll", "we", "the", "one", "two", "three", "all of us", "all attendees", "everyone", "his", "her", "probably", "drag", "drag-along", "1", "2", "3", "4", "5"]
+improbablenames = ["", " ", "a", "and", "i", "i'll", "we", "the", "one", "two", "three", "all of us", "all attendees", "everyone", "his", "her", "probably", "drag", "drag-along", "1", "2", "3", "4", "5", "wife", "family", "friends"]
 
 debug_fuzz = None
 debug_links = None
