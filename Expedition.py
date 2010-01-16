@@ -5,28 +5,34 @@ from UserListGenerator import *
 date_comment = u'<!--DATE-->'
 gratadd_comment = u'<!--GRATADD-->'
 gratname_comment = u'<!--GRATNAME-->'
+people_count_comment = u'<!--PEOP_COUNT-->'
 people_comment = u'<!--PEOPLE-->'
 location_comment = u'<!--LOCATION-->'
+transport_icon_comment = u'<!--TRANSICON-->'
 transport_comment = u'<!--TRANSPORT-->'
 reached_comment = u'<!--REACHED-->'
 reason_comment = u'<!--REASON-->'
 link_comment = u'<!--LINK-->'
 exped_comment = u'<!--EXPED-->'
 usertext_comment = u'<!--USERTEXT-->'
+reached_icon_comment = u'<!--REACHICON-->'
 
 RE_DATE = re.compile('DATE')
 RE_GRATADD = re.compile('GRATADD')
 RE_GRATNAME = re.compile('GRATNAME')
+RE_PEOPLE_COUNT = re.compile('PEOPLE:(\d+)')
 RE_PEOPLE = re.compile('PEOPLE')
 RE_LOCATION = re.compile('LOCATION')
+RE_TRANSPORT_ICON = re.compile('TRANSICON')
 RE_TRANSPORT = re.compile('TRANSPORT')
 RE_REACHED = re.compile('REACHED:(.*?):(.*?):REACHED')
+RE_REACHED_ICON = re.compile('REACHICON')
 RE_REASON = re.compile('REASON')
 RE_LINK = re.compile('LINK')
 RE_EXPED = re.compile('EXPED')
 RE_USERTEXT = re.compile('USERTEXT')
 RE_REACHED2 = re.compile('REACHED.*?REACHED')
-
+RE_PEOPLE_COUNT2 = re.compile('PEOPLE.:(\d+)')
 
 RE_APECOMMENT = re.compile("\<\!\-\-APE (.*?)\-\-\>")
 
@@ -45,6 +51,7 @@ RE_NOTOC = re.compile("__NOTOC__", re.DOTALL)
 RE_BIKE = re.compile("((bike)|(bicycle))", re.IGNORECASE)
 RE_BUS = re.compile("bus", re.IGNORECASE)
 RE_TRAIN = re.compile("train", re.IGNORECASE)
+RE_WALK = re.compile("walk(ed)?", re.IGNORECASE)
 RE_STRIPCAT = re.compile("Category:")
 RE_CATNOTREACH = re.compile("Category:Not reached - ")
 
@@ -82,7 +89,7 @@ class Expedition:
       else:
         self.peopleText = u"Someone went"
     self.location = self._getLocationText(self.text)
-    self.transport = self._getTransportText(self.text)
+    (self.transport, self.transportIcons) = self._getTransportText(self.text)
     self.reached = False
 
     reasons = []
@@ -103,15 +110,18 @@ class Expedition:
 
   def _getTransportText(self, fullText):
     transportList = []
+    transportIconList = []
     regexArr = [
-      (RE_BIKE, "Bicycle"),
-      (RE_BUS, "Bus"),
-      (RE_TRAIN, "Train")
+      (RE_BIKE, "Bicycle", "[[Image:Bikegeohash.png|22px]]"),
+      (RE_BUS, "Bus", "[[Image:Bus.PNG|24px]]"),
+      (RE_TRAIN, "Train", "[[Image:Bus.PNG|24px]]"),
+      (RE_WALK, "Walk", "[[Image:Walk.PNG|24px]]")
     ]
-    for rex,text in regexArr:
+    for rex,text,icon in regexArr:
       if (rex.search(fullText) != None):
         transportList.append(text) 
-    return ", ".join(transportList)
+        transportIconList.append(icon)
+    return (", ".join(transportList), "".join(transportIconList))
 
   def getDate(self):
     return self.date
@@ -204,50 +214,53 @@ class Expedition:
         return 0
 
 
+  def people_count_func(self, matchObj):
+    return people_count_comment + ", ".join(self.people_temp[0:int(matchObj.group(1))]) + people_count_comment
 
-  def subFormat(self, format = None, user = None, userComment = None):
+  def subFormat(self, format = None, user = None, oldText = None):
     userFound = False
-    if (userComment == None):
+    if (oldText == None):
       userComment = u''
-    if self.reached:
-#      reached = u"True"
-      reached = u'\\1'
     else:
-#      reached = u"False"
+      userComment = re.sub(".*" + usertext_comment + "(.*)" + usertext_comment + ".*", u'\\1', oldText)
+    if self.reached:
+      reached = u'\\1'
+      reached_icon = u'[[Image:Arrow2.png|12px]]'
+    else:
       reached = u'\\2'
+      reached_icon = u'[[Image:Arrow4.png|12px]]'
 
     people = []
     if self.people:
       if user:
         for person in self.people:
-          if(re.search(u"User:\s*" + user + u"[|\]]", person) == None):
+          if(re.search(u"User:\s*" + user + u"[|\]]", person, re.IGNORECASE) == None):
             people.append(person)
           else:
-#            print "Fuck you"
             userFound = True
       else:
         people = self.people
     if ((user != None) and (userFound != True)):
-#      print "Not returning shit, fuck you."
       return None
-#    else:
-#      print "Why are you returning: user",user,"userFound",userFound
     if (len(people) == 0):
       people = [u""]
     
-
+    self.people_temp = people
     formats = [
-      (RE_REACHED,   reached_comment   + reached                 + reached_comment),
-      (RE_DATE,      date_comment      + self.date               + date_comment),
-      (RE_GRATADD,   gratadd_comment   + self.gratAdd            + gratadd_comment),
-      (RE_GRATNAME,  gratname_comment  + self.gratName           + gratname_comment),
-      (RE_PEOPLE,    people_comment    + ", ".join(people)       + people_comment),
-      (RE_LOCATION,  location_comment  + self.location           + location_comment),
-      (RE_TRANSPORT, transport_comment + self.transport          + transport_comment),
-      (RE_REASON,    reason_comment    + self.failReason         + reason_comment),
-      (RE_LINK,      link_comment      + "[["+self.pageName+"]]" + link_comment),
-      (RE_EXPED,     exped_comment     + self.pageName           + exped_comment),
-      (RE_USERTEXT,  usertext_comment  + userComment             + usertext_comment),
+      (RE_REACHED_ICON,   reached_icon_comment   + reached_icon            + reached_icon_comment),
+      (RE_REACHED,        reached_comment        + reached                 + reached_comment),
+      (RE_DATE,           date_comment           + self.date               + date_comment),
+      (RE_GRATADD,        gratadd_comment        + self.gratAdd            + gratadd_comment),
+      (RE_GRATNAME,       gratname_comment       + self.gratName           + gratname_comment),
+      (RE_PEOPLE_COUNT,   self.people_count_func),
+      (RE_PEOPLE,         people_comment         + ", ".join(people)       + people_comment),
+      (RE_LOCATION,       location_comment       + self.location           + location_comment),
+      (RE_TRANSPORT_ICON, transport_icon_comment + self.transportIcons     + transport_icon_comment),
+      (RE_TRANSPORT,      transport_comment      + self.transport          + transport_comment),
+      (RE_REASON,         reason_comment         + self.failReason         + reason_comment),
+      (RE_LINK,           link_comment           + "[["+self.pageName+"]]" + link_comment),
+      (RE_EXPED,          exped_comment          + self.pageName           + exped_comment),
+      (RE_USERTEXT,       usertext_comment       + userComment             + usertext_comment),
     ]
     formatted_out = u"<!--APE " + self.date + u" " + self.gratAdd + u"-->";
     if format:
@@ -256,5 +269,6 @@ class Expedition:
       formatted_out += self.format
     for rex, sub in formats:
       formatted_out = rex.sub(sub, formatted_out)
+    self.people_temp = None
     return formatted_out
 

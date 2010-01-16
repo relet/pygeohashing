@@ -54,6 +54,7 @@ def date_page_write(date, site):
 
     page = wikipedia.Page(site, date)
     if(not page.exists()):
+        page = wikipedia.Page(site, date)
         page_write(page, page_text, site)
         add_date(site, date)
 
@@ -69,11 +70,11 @@ def holiday_lookup(date):
     else:
         return date
 
-customExpedList = {}
+expedListPeople = {}
 
 #Get up to 3 update requests from the page
 def get_old_dates(site, db):
-    global customExpedList
+    global expedListPeople
 
     page = wikipedia.Page(site, u"User:AperfectBot/Update_requests")
     all_text = page.get()
@@ -101,7 +102,7 @@ def get_old_dates(site, db):
 
     for date in match_list:
         expedSum = ExpeditionSummaries.ExpeditionSummaries(site, date, db)
-        customExpedList.update(expedSum.getSubFormats(user = "Aperfectring"))
+        expedListPeople = updateExpedLists(expedSum, expedListPeople)
 
     remove_dates(site, match_list)
 
@@ -167,9 +168,89 @@ def putExpeditionSummaries(summaries, site):
         if(datetime.date.today().isoformat() <= i):
             date_page_write(i, site)
 
+def parseExpedLists(site):
+    page = wikipedia.Page(site, u"User:AperfectBot/User_expedition_lists")
+    people_hash = getSections(page.get())
+
+    formats = [
+      (Expedition.RE_DATE,           re.escape(Expedition.date_comment)            + ".*?" + re.escape(Expedition.date_comment)),
+      (Expedition.RE_GRATADD,        re.escape(Expedition.gratadd_comment)         + ".*?" + re.escape(Expedition.gratadd_comment)),
+      (Expedition.RE_GRATNAME,       re.escape(Expedition.gratname_comment)        + ".*?" + re.escape(Expedition.gratname_comment)),
+      (Expedition.RE_PEOPLE_COUNT2,  re.escape(Expedition.people_count_comment)    + ".*?" + re.escape(Expedition.people_count_comment)),
+      (Expedition.RE_PEOPLE,         re.escape(Expedition.people_comment)          + ".*?" + re.escape(Expedition.people_comment)),
+      (Expedition.RE_LOCATION,       re.escape(Expedition.location_comment)        + ".*?" + re.escape(Expedition.location_comment)),
+      (Expedition.RE_TRANSPORT_ICON, re.escape(Expedition.transport_icon_comment)  + ".*?" + re.escape(Expedition.transport_icon_comment)),
+      (Expedition.RE_TRANSPORT,      re.escape(Expedition.transport_comment)       + ".*?" + re.escape(Expedition.transport_comment)),
+      (Expedition.RE_REACHED_ICON,   re.escape(Expedition.reached_icon_comment)    + ".*?" + re.escape(Expedition.reached_icon_comment)),
+      (Expedition.RE_REACHED2,       re.escape(Expedition.reached_comment)         + ".*?" + re.escape(Expedition.reached_comment)),
+      (Expedition.RE_REASON,         re.escape(Expedition.reason_comment)          + ".*?" + re.escape(Expedition.reason_comment)),
+      (Expedition.RE_LINK,           re.escape(Expedition.link_comment)            + ".*?" + re.escape(Expedition.link_comment)),
+      (Expedition.RE_EXPED,          re.escape(Expedition.exped_comment)           + ".*?" + re.escape(Expedition.exped_comment)),
+      (Expedition.RE_USERTEXT,       re.escape(Expedition.usertext_comment)        + ".*?" + re.escape(Expedition.usertext_comment)),
+    ]
+
+    expedListPeople = {}
+
+    for person in people_hash.keys():
+      if(len(person) != 0):
+        text_arr = re.split('\n', people_hash[person])
+        page = wikipedia.Page(site, text_arr[0])
+        if(page.exists()):
+          page_text = page.get()
+        else:
+          page_text = u""        
+
+        exp_list_text_match = RE_EXPLIST_COMMENT.search(page_text)
+        if(exp_list_text_match != None):
+          exp_list_text = exp_list_text_match.group(1)
+        else:
+          exp_list_text = u""
+
+        formatText = u"(" + Expedition.RE_APECOMMENT.pattern + re.escape("\n".join(text_arr[1:])) + u")"
+
+        for rex, repl in formats:
+          formatText = rex.sub(repl, formatText)
+
+        page_matches = re.findall(formatText, exp_list_text)
+
+        customExpedList = {}
+
+        for text, name in page_matches:
+          customExpedList[name] = text
+
+        expedListPeople[person] = [u"\n".join(text_arr[1:]), customExpedList, text_arr[0]]
+    return expedListPeople
+
+def updateExpedLists(expedSums, expedListPeople):
+    for person in expedListPeople.keys():
+      if(len(person) > 0):
+        expedListPeople[person][1].update(expedSums.getSubFormats(format = expedListPeople[person][0], user = person, oldText = expedListPeople[person][1]))
+    return expedListPeople
+
+def writeExpedLists(site, expedListPeople):
+    for person in expedListPeople.keys():
+      if(len(person) > 0):
+        page = wikipedia.Page(site, expedListPeople[person][2])
+        if(not page.exists()):
+          page_text = u"<!--EXPLIST-->" + u"\n<!--EXPLIST-->"
+          page = wikipedia.Page(site, expedListPeople[person][2])
+          page_write(page, page_text, site)
+        else:
+          page_text = page.get()
+        userExpeds = u"<!--EXPLIST-->"
+        ExpedDates = expedListPeople[person][1].keys()
+        ExpedDates.sort()
+        for key in ExpedDates:
+          userExpeds += expedListPeople[person][1][key] + u"\n"
+
+        userExpeds += u"<!--EXPLIST-->"
+
+        page_text = RE_EXPLIST_COMMENT.sub(userExpeds, page_text)
+        page_write(page, page_text, site)    
+
 # Define the main function
 def main():
-    global customExpedList
+    global expedListPeople
 #    wikipedia.verbose = 1
     titleOfPageToLoad = u'2009-06-14_49_-122' # The "u" before the title means Unicode, important for special characters
 #    wikipedia.put_throttle.setDelay(10, absolute = True)
@@ -187,42 +268,7 @@ def main():
 #Produce a list of all pages from 3 weekdays ago through when coordinates are available
 #  by looking at the [[Category:Meetup on YYYY-MM-DD]] pages
 
-    page = wikipedia.Page(enwiktsite, u"User:Aperfectring/Expeditions")
-    if(page.exists()):
-      page_text = page.get()
-    else:
-      page_text = u""
-    formats = [
-      (Expedition.RE_DATE,      re.escape(Expedition.date_comment)      + ".*?" + re.escape(Expedition.date_comment)),
-      (Expedition.RE_GRATADD,   re.escape(Expedition.gratadd_comment)   + ".*?" + re.escape(Expedition.gratadd_comment)),
-      (Expedition.RE_GRATNAME,  re.escape(Expedition.gratname_comment)  + ".*?" + re.escape(Expedition.gratname_comment)),
-      (Expedition.RE_PEOPLE,    re.escape(Expedition.people_comment)    + ".*?" + re.escape(Expedition.people_comment)),
-      (Expedition.RE_LOCATION,  re.escape(Expedition.location_comment)  + ".*?" + re.escape(Expedition.location_comment)),
-      (Expedition.RE_TRANSPORT, re.escape(Expedition.transport_comment) + ".*?" + re.escape(Expedition.transport_comment)),
-      (Expedition.RE_REACHED2,  re.escape(Expedition.reached_comment)   + ".*?" + re.escape(Expedition.reached_comment)),
-      (Expedition.RE_REASON,    re.escape(Expedition.reason_comment)    + ".*?" + re.escape(Expedition.reason_comment)),
-      (Expedition.RE_LINK,      re.escape(Expedition.link_comment)      + ".*?" + re.escape(Expedition.link_comment)),
-      (Expedition.RE_EXPED,     re.escape(Expedition.exped_comment)     + ".*?" + re.escape(Expedition.exped_comment)),
-      (Expedition.RE_USERTEXT,  re.escape(Expedition.usertext_comment)  + ".*?" + re.escape(Expedition.usertext_comment)),
-    ]
-
-    exp_list_text_match = RE_EXPLIST_COMMENT.search(page_text)
-    if(exp_list_text_match != None):
-      exp_list_text = exp_list_text_match.group(1)
-    else:
-      exp_list_text = u""
-
-    formatText = u"(" + Expedition.RE_APECOMMENT.pattern + re.escape(u"|-\n|DATE||GRATADD||GRATNAME||PEOPLE||REACHED:[[EXPED|Succeeded]]:[[EXPED|Failed]]:REACHED||LOCATION") + u")"
-#    formatText = u"(" + Expedition.RE_APECOMMENT.pattern + u")"
-#    formatText = u"(" + re.escape(u" date DATE - gratadd GRATADD - gratname GRATNAME - people PEOPLE - location LOCATION - transport TRANSPORT - reached REACHED - reason REASON - link LINK - exped EXPED - usertext USERTEXT\n") + u")"
-
-    for rex, repl in formats:
-      formatText = rex.sub(repl, formatText)
-
-    page_matches = re.findall(formatText, exp_list_text)
-
-    for text, name in page_matches:
-      customExpedList[name] = text
+    expedListPeople = parseExpedLists(enwiktsite)
 
     all_text = u""
     first_date_obj = get_last_day_avail(datetime.date.today() + datetime.timedelta(7))
@@ -232,26 +278,24 @@ def main():
         while (first_date_obj > datetime.date.today()):
             cur_dates.append(first_date_obj.isoformat())
             expedSums = ExpeditionSummaries.ExpeditionSummaries(enwiktsite, first_date_obj.isoformat(), db)
-            customExpedList.update(expedSums.getSubFormats(user = "Aperfectring"))
+            expedListPeople = updateExpedLists(expedSums, expedListPeople)
             first_date_obj = first_date_obj - datetime.timedelta(1)
 
         cur_dates.append(first_date_obj.isoformat())
         expedSums = ExpeditionSummaries.ExpeditionSummaries(enwiktsite, first_date_obj.isoformat(), db)
-        customExpedList.update(expedSums.getSubFormats(user = "Aperfectring"))
+        expedListPeople = updateExpedLists(expedSums, expedListPeople)
         first_date_obj = first_date_obj - datetime.timedelta(1)
 
         while (first_date_obj.weekday() > 4):
             cur_dates.append(first_date_obj.isoformat())
             expedSums = ExpeditionSummaries.ExpeditionSummaries(enwiktsite, first_date_obj.isoformat(), db)
-            customExpedList.update(expedSums.getSubFormats(user = "Aperfectring"))
+            expedListPeople = updateExpedLists(expedSums, expedListPeople)
             first_date_obj = first_date_obj - datetime.timedelta(1)
 
     cur_dates.append(first_date_obj.isoformat())
     expedSums = ExpeditionSummaries.ExpeditionSummaries(enwiktsite, first_date_obj.isoformat(), db)
-    customExpedList.update(expedSums.getSubFormats(user = "Aperfectring"))
+    expedListPeople = updateExpedLists(expedSums, expedListPeople)
     first_date = first_date_obj.isoformat()
-
-#    print customExpedList
 
     remove_dates(enwiktsite, cur_dates)
 
@@ -267,18 +311,7 @@ def main():
     if check_banana(enwiktsite) != 0:
         return 1
 
-    page = wikipedia.Page(enwiktsite, u"User:Aperfectring/Expeditions")
-    page_text = page.get()
-    userExpeds = u"<!--EXPLIST-->"
-    ExpedDates = customExpedList.keys()
-    ExpedDates.sort()
-    for key in ExpedDates:
-      userExpeds += customExpedList[key] + u"\n"
-
-    userExpeds += u"<!--EXPLIST-->"
-
-    page_text = RE_EXPLIST_COMMENT.sub(userExpeds, page_text)
-    page_write(page, page_text, enwiktsite)
+    writeExpedLists(enwiktsite, expedListPeople)
 
 #Create the [[Template:Expedition_summaries/YYYY-MM-DD]] pages for planning page dates
     putExpeditionSummaries(plan_dates, enwiktsite)

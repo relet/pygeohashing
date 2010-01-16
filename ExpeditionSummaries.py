@@ -42,6 +42,7 @@ class ExpeditionSummaries:
 
     page = wikipedia.Page(self.site, self.date)
     if(not page.exists()):
+      page = wikipedia.Page(self.site, self.date)
       self._pageWrite(page, pageText)
 
   def _checkBanana(self):
@@ -53,17 +54,26 @@ class ExpeditionSummaries:
     else:
       return 1
 
-  def getSubFormats(self, format = None, user = None, userComment = None):
+  def getSubFormats(self, format = None, user = None, oldText = None):
     formats = {}
+    if (oldText == None):
+      oldText = {}
     for exped in self.expedList:
       resultText = None
-      resultText = exped.subFormat(format, user, userComment)
+      if exped.getPagename() in oldText:
+        resultText = exped.subFormat(format, user, oldText[exped.getPagename()])
+      else:
+        resultText = exped.subFormat(format, user)
       if (resultText != None):
         formats[exped.getPagename()] = resultText
 
     return formats
 
   def _getAllCategoryPages(self):
+    page = wikipedia.Page(self.site, "Category:Meetup on " + self.date)
+    pageText = u"[[Category:Meetup in " + re.sub("-\d{2}$","",self.date) + u"]]"
+    self._pageWrite(page, pageText)
+
     cat = category.catlib.Category(self.site, "Meetup on " + self.date)
     articleList = cat.articlesList()
     return articleList
