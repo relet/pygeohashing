@@ -168,10 +168,14 @@ def putExpeditionSummaries(summaries, site):
         if(datetime.date.today().isoformat() <= i):
             date_page_write(i, site)
 
-def parseExpedLists(site):
+#Get the list of people who have requested expedition lists
+def getPersonList(site):
     page = wikipedia.Page(site, u"User:AperfectBot/User_expedition_lists")
     people_hash = getSections(page.get())
-
+    return people_hash
+    
+#Get all of the expeditions already parsed for a specific user.
+def getExpeditions(site, person, person_entry):
     formats = [
       (Expedition.RE_DATE,           re.escape(Expedition.date_comment)            + ".*?" + re.escape(Expedition.date_comment)),
       (Expedition.RE_GRATADD,        re.escape(Expedition.gratadd_comment)         + ".*?" + re.escape(Expedition.gratadd_comment)),
@@ -189,65 +193,86 @@ def parseExpedLists(site):
       (Expedition.RE_USERTEXT,       re.escape(Expedition.usertext_comment)        + ".*?" + re.escape(Expedition.usertext_comment)),
     ]
 
+    text_arr = re.split('\n', person_entry)
+    print "Fetching ", text_arr[0]
+    page = wikipedia.Page(site, text_arr[0])
+    if(page.exists()):
+      page_text = page.get()
+    else:
+      page_text = u""        
+
+    exp_list_text_match = RE_EXPLIST_COMMENT.search(page_text)
+    if(exp_list_text_match != None):
+      exp_list_text = exp_list_text_match.group(1)
+    else:
+      exp_list_text = u""
+
+    formatText = u"(" + Expedition.RE_APECOMMENT.pattern + re.escape("\n".join(text_arr[1:])) + u")"
+
+    for rex, repl in formats:
+      formatText = rex.sub(repl, formatText)
+
+    page_matches = re.findall(formatText, exp_list_text)
+
+    customExpedList = {}
+
+    for text, name in page_matches:
+      customExpedList[name] = text
+
+    return [u"\n".join(text_arr[1:]), customExpedList, text_arr[0]]
+    
+#Get all the current per-user expedition lists
+def parseExpedLists(site):
+    people_hash = getPersonList(site)
     expedListPeople = {}
 
     for person in people_hash.keys():
       if(len(person) != 0):
-        text_arr = re.split('\n', people_hash[person])
-        page = wikipedia.Page(site, text_arr[0])
-        if(page.exists()):
-          page_text = page.get()
-        else:
-          page_text = u""        
-
-        exp_list_text_match = RE_EXPLIST_COMMENT.search(page_text)
-        if(exp_list_text_match != None):
-          exp_list_text = exp_list_text_match.group(1)
-        else:
-          exp_list_text = u""
-
-        formatText = u"(" + Expedition.RE_APECOMMENT.pattern + re.escape("\n".join(text_arr[1:])) + u")"
-
-        for rex, repl in formats:
-          formatText = rex.sub(repl, formatText)
-
-        page_matches = re.findall(formatText, exp_list_text)
-
-        customExpedList = {}
-
-        for text, name in page_matches:
-          customExpedList[name] = text
-
-        expedListPeople[person] = [u"\n".join(text_arr[1:]), customExpedList, text_arr[0]]
+        expedListPeople[person] = getExpeditions(site, person, people_hash[person])
     return expedListPeople
 
+#Update the expedition lists with new data found this run
 def updateExpedLists(expedSums, expedListPeople):
     for person in expedListPeople.keys():
       if(len(person) > 0):
         expedListPeople[person][1].update(expedSums.getSubFormats(format = expedListPeople[person][0], user = person, oldText = expedListPeople[person][1]))
     return expedListPeople
 
-def writeExpedLists(site, expedListPeople):
-    for person in expedListPeople.keys():
+#Update the USERTEXT sections of the expedition list and write out the whole list
+def updateUserTexts(site):
+    global expedListPeople
+    re_text = Expedition.RE_USERTEXT.pattern + ".*?" + Expedition.RE_USERTEXT.pattern
+    RE_USERTEXT_COMMENT = re.compile(re_text, re.DOTALL)
+    people_hash = getPersonList(site)
+    for person in people_hash.keys():
       if(len(person) > 0):
-        page = wikipedia.Page(site, expedListPeople[person][2])
-        if(not page.exists()):
-          page_text = u"<!--EXPLIST-->" + u"\n<!--EXPLIST-->"
-          page = wikipedia.Page(site, expedListPeople[person][2])
-          page_write(page, page_text, site)
-        else:
-          page_text = page.get()
-        userExpeds = u"<!--EXPLIST-->"
-        ExpedDates = expedListPeople[person][1].keys()
-        ExpedDates.sort()
-        for key in ExpedDates:
-          userExpeds += expedListPeople[person][1][key] + u"\n"
+        personExpeds = getExpeditions(site, person, people_hash[person])
+        for date in personExpeds[1].keys():
+          matchObj = RE_USERTEXT_COMMENT.search(personExpeds[1][date])
+          if(matchObj != None):
+            expedListPeople[person][1][date] = RE_USERTEXT_COMMENT.sub(matchObj.group(0),expedListPeople[person][1][date])
+        writeExpedListPerson(site, expedListPeople[person])
 
-        userExpeds += u"<!--EXPLIST-->"
+#Write the expedition list for a specific person
+def writeExpedListPerson(site, expedList):
+    page = wikipedia.Page(site, expedList[2])
+    if(not page.exists()):
+      page_text = u"<!--EXPLIST-->" + u"\n<!--EXPLIST-->"
+      page = wikipedia.Page(site, expedList[2])
+      page_write(page, page_text, site)
+    else:
+      page_text = page.get()
+    userExpeds = u"<!--EXPLIST-->"
+    ExpedDates = expedList[1].keys()
+    ExpedDates.sort()
+    for key in ExpedDates:
+      userExpeds += expedList[1][key] + u"\n"
 
-        page_text = RE_EXPLIST_COMMENT.sub(userExpeds, page_text)
-        page_write(page, page_text, site)    
+    userExpeds += u"<!--EXPLIST-->"
 
+    page_text = RE_EXPLIST_COMMENT.sub(userExpeds, page_text)
+    page_write(page, page_text, site)    
+    
 # Define the main function
 def main():
     global expedListPeople
@@ -311,7 +336,7 @@ def main():
     if check_banana(enwiktsite) != 0:
         return 1
 
-    writeExpedLists(enwiktsite, expedListPeople)
+    updateUserTexts(enwiktsite)
 
 #Create the [[Template:Expedition_summaries/YYYY-MM-DD]] pages for planning page dates
     putExpeditionSummaries(plan_dates, enwiktsite)
