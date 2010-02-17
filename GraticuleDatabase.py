@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import re, sys, yaml
+import re, sys
 import wikipedia
+import sqlite
 
 re_grat = re.compile('\[\[(.*?)\| *([0-9\-]+, *[0-9\-]+) *\(.*?\) *\]\]')
 
@@ -37,9 +38,11 @@ def grow(latlon):
           (inc(lat), inc(lon))]
           
 class GraticuleDatabase:
-    '''
-    This is a hashtable of graticules indexed lat->lon->(name, country)
-    '''
+    
+    def addGraticule(self, lat, lon, page, name, country):
+      iswater = lat+","+lon in name
+      self.cur.execute('insert or replace into graticules values (%s,%s,%s,%s,%s,%s)', (lat, lon, page.encode("utf-8"), name and name.encode("utf-8"), country and country.encode("utf-8"), iswater and "TRUE" or "FALSE")) #encode to utf-8 here?
+      self.db.commit()
 
     def parseGraticulePage(self, page):
       text = page.get(get_redirect = False)
@@ -48,8 +51,6 @@ class GraticuleDatabase:
       for match in result:
         page, grat = match
         lat, lon = grat.split(", ")
-        if not lat in self.data:
-          self.data[lat]={}
         if grat in page:
           name = page
           country = reduce(lambda x,y:x+" "+y, page.split(" ")[0:-2])
@@ -60,14 +61,14 @@ class GraticuleDatabase:
         else:
           name = page
           country = None
-        self.data[lat][lon] = (page, name, country)
+        self.addGraticule( lat, lon, page, name, country )
 
     def __init__(self, filename = None):
       if filename:
         self.load(filename)
       else:
         site = wikipedia.getSite()
-        self.data = {}
+        self.load("graticules.sqlite")
         self.parseGraticulePage(wikipedia.Page(site, u"All graticules/Eurasia"))
         self.parseGraticulePage(wikipedia.Page(site, u"All graticules/Australasia"))
         self.parseGraticulePage(wikipedia.Page(site, u"All graticules/Africa"))
@@ -76,19 +77,22 @@ class GraticuleDatabase:
         self.parseGraticulePage(wikipedia.Page(site, u"All graticules/Oceans"))
         self.parseGraticulePage(wikipedia.Page(site, u"All graticules/Antarctica"))
 
-    def dump(self, filename):
-      yamldump = open(filename,'w')          # store the data set we have last been working on
-      yamldump.write(yaml.dump(self.data))   # in order to quickly identify changes in the future.
-      yamldump.close()
+    def dump(self):
+      self.db.commit()
 
     def load(self, filename):
-      yamldump = open(filename,'r')          # store the data set we have last been working on
-      self.data = yaml.load(yamldump.read())   # in order to quickly identify changes in the future.
-      yamldump.close()
+      self.db = sqlite.connect(filename)
+      self.cur = self.db.cursor()
+      self.cur.execute ('create table if not exists graticules (lat text, lon text, page text, name text, country text, water boolean)')
+      self.cur.execute ('create index if not exists klatlon on graticules (lat, lon)')
+      self.cur.execute ('create index if not exists kwater on graticules (water)')
+      self.db.commit()
 
     def getLatLon(self, lat, lon, unknownIsNumeric = False):
       try:
-        return self.data[lat][lon]
+        self.cur.execute('select page, name, country from graticules where lat = %s and lon = %s', (lat, lon))
+        page, name, country = self.cur.fetchone()
+        return (page.decode("utf-8"), name and name.decode("utf-8"), country and country.decode("utf-8"))
       except:
         if unknownIsNumeric:
           return ("%s,%s" % (lat,lon))
@@ -96,29 +100,17 @@ class GraticuleDatabase:
           return None
           
     def findAll(self, search):
-      result = []
-      for lat in self.data.keys():
-        for lon in self.data[lat].keys():
-          page = self.getLatLon(lat, lon)
-          if page:
-            if search.lower() in page[0].lower():
-              result.append(((lat,lon),page))
-      return result 
+      cur.execute('select lat,lon,page from graticules where page like %s', "%"+search+"%")
+      return cur.fetchall()
 
-    def getAllKeys(self):
-      all = []
-      for lat in self.data.keys():
-        for lon in self.data[lat].keys():
-          all.append((lat,lon))
-      return all
+    def getAllKeys(self): 
+      self.cur.execute('select lat, lon from graticules')
+      return self.cur.fetchall()
 
     def getAllWaterKeys(self):
-      all = []
-      for lat in self.data.keys():
-        for lon in self.data[lat].keys():
-          if lat+", "+lon in self.data[lat][lon][0]:
-            all.append((lat,lon))
-      return all
+      self.cur.execute('select lat, lon from graticules where water = TRUE')
+      return self.cur.fetchall()
+
 
     def gratlink(self, lat, lon, refcountry = None):
       entry = self.getLatLon(lat, lon)
@@ -134,11 +126,11 @@ class GraticuleDatabase:
         if lat in page:
           title = (page.split(lat)[0]).strip()
         if link == title:
-          return "[[%s]]" % link
+          return u"[[%s]]" % link
         else:
-          return "[[%s|%s]]" % (link, title)
+          return u"[[%s|%s]]" % (link, title)
       else:
-        return "[[%s,%s]]" % (lat, lon) 
+        return u"[[%s,%s]]" % (lat, lon)
       
 
     def getTemplate(self, lat, lon, refcountry):
