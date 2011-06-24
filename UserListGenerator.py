@@ -7,6 +7,7 @@ import math, sys
 MAX_USERNAME_LENGTH = 31
 
 RE_LINKS = re.compile('(\[\[[Uu]ser *: *(.{1,%i}?) *(?:\| *(.+?) *)?\]\])' % MAX_USERNAME_LENGTH)
+RE_HTMLCOMMENT = re.compile("\<\!\-\-.*?\-\-\>", re.DOTALL)
 
 # anything within a [[User:x|y]] style link 
 re_userlink = '\[\[[Uu]ser\s*:\s*(.{1,%i}?)\s*(?:\|\s*(?:.+?)\s*)?\]\]' % MAX_USERNAME_LENGTH
@@ -94,7 +95,9 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
   
   #print "===",page,"==="
   fuzzy = {} #user id -> probability of being a participant
-  text = unscorify(origtext)
+
+  text = RE_HTMLCOMMENT.sub("",origtext)
+  text = unscorify(text)
   
   pseudonyms = {}
   userlinks  = {}

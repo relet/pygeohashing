@@ -25,7 +25,7 @@ class ExpeditionSummaries:
         
 
     page = wikipedia.Page(self.site, "Template:Expedition_summaries/" + self.date)
-    self._pageWrite(page, u"<noinclude>This page is automatically generated.  Any edits to this page will be overwritten by a bot.\n\n</noinclude>" + "\n\n".join(allSummaries))
+    self._pageWrite(page, u'<noinclude>This page is automatically generated.  Any edits to this page will be overwritten by a bot.\n{| style="width: 100%; border: 1px solid grey; border-collapse:collapse;" cellpadding="5" cellspacing="0" border="1"</noinclude>\n|-\n|' + "\n|-\n|".join(allSummaries) + '\n<noinclude>\n|-\n|}\n</noinclude>')
     if(datetime.date.today().isoformat() <= self.date):
         self._datePageWrite()
 
@@ -37,7 +37,7 @@ class ExpeditionSummaries:
   def _datePageWrite(self):
     pageText = u"<noinclude>{{date navigation}}</noinclude>\n"
     pageText += u"{{auto coordinates|" + self.date + "}}\n"
-    pageText += u"{{auto gallery|" + self.date + "}}\n"
+    pageText += u"{{auto gallery2|" + self.date + "}}\n"
     pageText += u"<noinclude>{{expedition summaries|" + self.date + "}}</noinclude>\n"
 
     page = wikipedia.Page(self.site, self.date)

@@ -8,6 +8,7 @@ import hashlib, struct, urllib
 import time
 from UserListGenerator import *
 import Expedition, ExpeditionSummaries
+import os
 
 #ccodes  = {}
 #for line in open("countryCodes.txt","r"):
@@ -49,7 +50,7 @@ def page_write(page, text, site):
 def date_page_write(date, site):
     page_text = u"<noinclude>{{date navigation}}</noinclude>\n"
     page_text += u"{{auto coordinates|" + date + "}}\n"
-    page_text += u"{{auto gallery|" + date + "}}\n"
+    page_text += u"{{auto gallery2|" + date + "}}\n"
     page_text += u"<noinclude>{{expedition summaries|" + date + "}}</noinclude>\n"
 
     page = wikipedia.Page(site, date)
@@ -160,8 +161,8 @@ def putExpeditionSummaries(summaries, site):
     date_keys.sort()
     date_keys.reverse()
     for i in date_keys:
-        all_text = u"<noinclude>This page is automatically generated.  Any edits to this page will be overwritten by a bot.\n\n</noinclude>"
-        all_text += u"\n\n".join(summaries[i])
+        all_text = u"<noinclude>This page is automatically generated.  Any edits to this page will be overwritten by a bot.\n\n</noinclude>\n|-\n|"
+        all_text += u"\n|-\n|".join(summaries[i])
         page = wikipedia.Page(site, "Template:Expedition_summaries/" + i)
         page_write(page, all_text, site)
 #Only update the date page if its in the future, and its 9:** AM
@@ -283,6 +284,8 @@ def main():
 
     enwiktsite = wikipedia.getSite('en', 'geohashing') # loading a defined project's page
 
+    os.unlink("graticules.sqlite")
+
     db = GraticuleDatabase.GraticuleDatabase()
     all = db.getAllKeys()
 
@@ -370,7 +373,6 @@ def main():
         if (i == last_date_obj.isoformat()):
             summary_text += u"== Expeditions Being Planned ==\n"
 
-        summary_text += u"=== [[" + holiday_lookup(i) + u"]] ===\n"
         if i in recent_exp_hash:
             summary_text += recent_exp_hash[i]
         else:

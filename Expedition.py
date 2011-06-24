@@ -131,7 +131,7 @@ class Expedition:
 
   def getExpeditionSummary(self):
     link = u"[[" + self.pageName + u"|" + self.gratName + u"]]"
-    expSum = link + u" - " + self.peopleText + u" - " + self.location
+    expSum = link + u" || " + self.peopleText + u" || " + self.location
     return expSum
 
   def _getLocationText(self, text):
