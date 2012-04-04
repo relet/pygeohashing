@@ -33,6 +33,8 @@ RE_EXPED = re.compile('EXPED')
 RE_USERTEXT = re.compile('USERTEXT')
 RE_REACHED2 = re.compile('REACHED.*?REACHED')
 RE_PEOPLE_COUNT2 = re.compile('PEOPLE.:(\d+)')
+RE_LISTLEN = re.compile('LISTLEN:(-?\d+)')
+RE_LISTLEN2 = re.compile('LISTLEN.:.?(-?\d+)')
 
 RE_APECOMMENT = re.compile("\<\!\-\-APE (.*?)\-\-\>")
 
@@ -217,7 +219,11 @@ class Expedition:
   def people_count_func(self, matchObj):
     return people_count_comment + ", ".join(self.people_temp[0:int(matchObj.group(1))]) + people_count_comment
 
-  def subFormat(self, format = None, user = None, oldText = None):
+  def subFormat(self, format = None, user = None, oldText = None, grat = None):
+    if grat:
+        grat_addr = self.lat + "," + self.lon
+        if grat_addr != grat:
+            return None
     userFound = False
     if (oldText == None):
       userComment = u''
@@ -261,6 +267,7 @@ class Expedition:
       (RE_LINK,           link_comment           + "[["+self.pageName+"]]" + link_comment),
       (RE_EXPED,          exped_comment          + self.pageName           + exped_comment),
       (RE_USERTEXT,       usertext_comment       + userComment             + usertext_comment),
+      (RE_LISTLEN,        ""),
     ]
     formatted_out = u"<!--APE " + self.date + u" " + self.gratAdd + u"-->";
     if format:

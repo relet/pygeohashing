@@ -54,16 +54,16 @@ class ExpeditionSummaries:
     else:
       return 1
 
-  def getSubFormats(self, format = None, user = None, oldText = None):
+  def getSubFormats(self, format = None, user = None, oldText = None, grat = None):
     formats = {}
     if (oldText == None):
       oldText = {}
     for exped in self.expedList:
       resultText = None
       if exped.getPagename() in oldText:
-        resultText = exped.subFormat(format, user, oldText[exped.getPagename()])
+        resultText = exped.subFormat(format, user, oldText[exped.getPagename()], grat = grat)
       else:
-        resultText = exped.subFormat(format, user)
+        resultText = exped.subFormat(format, user, grat = grat)
       if (resultText != None):
         formats[exped.getPagename()] = resultText
 

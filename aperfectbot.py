@@ -72,10 +72,12 @@ def holiday_lookup(date):
         return date
 
 expedListPeople = {}
+expedListGrats = {}
 
 #Get up to 3 update requests from the page
 def get_old_dates(site, db):
     global expedListPeople
+    global expedListGrats
 
     page = wikipedia.Page(site, u"User:AperfectBot/Update_requests")
     all_text = page.get()
@@ -104,6 +106,7 @@ def get_old_dates(site, db):
     for date in match_list:
         expedSum = ExpeditionSummaries.ExpeditionSummaries(site, date, db)
         expedListPeople = updateExpedLists(expedSum, expedListPeople)
+        expedListGrats = updateExpedListsGrats(expedSum, expedListGrats)
 
     remove_dates(site, match_list)
 
@@ -174,6 +177,12 @@ def getPersonList(site):
     page = wikipedia.Page(site, u"User:AperfectBot/User_expedition_lists")
     people_hash = getSections(page.get())
     return people_hash
+
+#Get the list of people who have requested expedition lists
+def getGratList(site):
+    page = wikipedia.Page(site, u"User:AperfectBot/Grat_expedition_lists")
+    grat_hash = getSections(page.get())
+    return grat_hash
     
 #Get all of the expeditions already parsed for a specific user.
 def getExpeditions(site, person, person_entry):
@@ -192,10 +201,11 @@ def getExpeditions(site, person, person_entry):
       (Expedition.RE_LINK,           re.escape(Expedition.link_comment)            + ".*?" + re.escape(Expedition.link_comment)),
       (Expedition.RE_EXPED,          re.escape(Expedition.exped_comment)           + ".*?" + re.escape(Expedition.exped_comment)),
       (Expedition.RE_USERTEXT,       re.escape(Expedition.usertext_comment)        + ".*?" + re.escape(Expedition.usertext_comment)),
+      (Expedition.RE_LISTLEN2,       ""),
     ]
 
     text_arr = re.split('\n', person_entry)
-    print "Fetching ", text_arr[0]
+#    print "Fetching ", text_arr[0]
     page = wikipedia.Page(site, text_arr[0])
     if(page.exists()):
       page_text = page.get()
@@ -232,12 +242,29 @@ def parseExpedLists(site):
         expedListPeople[person] = getExpeditions(site, person, people_hash[person])
     return expedListPeople
 
+#Get all the current per-graticule expedition lists
+def parseExpedListsGrats(site):
+    grat_hash = getGratList(site)
+    expedListGrats = {}
+
+    for grat in grat_hash.keys():
+      if(len(grat) != 0):
+        expedListGrats[grat] = getExpeditions(site, grat, grat_hash[grat])
+    return expedListGrats
+
 #Update the expedition lists with new data found this run
 def updateExpedLists(expedSums, expedListPeople):
     for person in expedListPeople.keys():
       if(len(person) > 0):
         expedListPeople[person][1].update(expedSums.getSubFormats(format = expedListPeople[person][0], user = person, oldText = expedListPeople[person][1]))
     return expedListPeople
+
+def updateExpedListsGrats(expedSums, expedListGrats):
+    for grat in expedListGrats.keys():
+      if(len(grat) > 0):
+        expedListGrats[grat][1].update(expedSums.getSubFormats(format = expedListGrats[grat][0], grat = grat, oldText = expedListGrats[grat][1]))
+    return expedListGrats
+
 
 #Update the USERTEXT sections of the expedition list and write out the whole list
 def updateUserTexts(site):
@@ -254,7 +281,21 @@ def updateUserTexts(site):
             expedListPeople[person][1][date] = RE_USERTEXT_COMMENT.sub(matchObj.group(0),expedListPeople[person][1][date])
         writeExpedListPerson(site, expedListPeople[person])
 
-#Write the expedition list for a specific person
+def updateGratTexts(site):
+    global expedListGrats
+    re_text = Expedition.RE_USERTEXT.pattern + ".*?" + Expedition.RE_USERTEXT.pattern
+    RE_USERTEXT_COMMENT = re.compile(re_text, re.DOTALL)
+    grat_hash = getGratList(site)
+    for grat in grat_hash.keys():
+      if(len(grat) > 0):
+        gratExpeds = getExpeditions(site, grat, grat_hash[grat])
+        for date in gratExpeds[1].keys():
+          matchObj = RE_USERTEXT_COMMENT.search(gratExpeds[1][date])
+          if(matchObj != None):
+            expedListGrats[grat][1][date] = RE_USERTEXT_COMMENT.sub(matchObj.group(0),expedListGrats[grat][1][date])
+        writeExpedListPerson(site, expedListGrats[grat])
+
+#Write the expedition list for a specific person or graticule
 def writeExpedListPerson(site, expedList):
     page = wikipedia.Page(site, expedList[2])
     if(not page.exists()):
@@ -266,9 +307,25 @@ def writeExpedListPerson(site, expedList):
     userExpeds = u"<!--EXPLIST-->"
     ExpedDates = expedList[1].keys()
     ExpedDates.sort()
-    for key in ExpedDates:
-      userExpeds += expedList[1][key] + u"\n"
 
+    listlen = None
+    matchObj = Expedition.RE_LISTLEN.search(expedList[0])
+    if matchObj:
+	print matchObj.group(0)
+	print matchObj.group(1)
+        listlen = matchObj.group(1)
+        if(int(listlen) < 0):
+            ExpedDates.reverse()
+
+    itera = 0
+    for key in ExpedDates:
+      itera += 1
+      userExpeds += expedList[1][key] + u"\n"
+      if listlen and itera == math.fabs(int(listlen)):
+          userExpeds += u"<noinclude>\n"
+
+    if listlen and itera >= math.fabs(int(listlen)):
+        userExpeds += u"</noinclude>\n"
     userExpeds += u"<!--EXPLIST-->"
 
     page_text = RE_EXPLIST_COMMENT.sub(userExpeds, page_text)
@@ -277,6 +334,7 @@ def writeExpedListPerson(site, expedList):
 # Define the main function
 def main():
     global expedListPeople
+    global expedListGrats
 #    wikipedia.verbose = 1
     titleOfPageToLoad = u'2009-06-14_49_-122' # The "u" before the title means Unicode, important for special characters
 #    wikipedia.put_throttle.setDelay(10, absolute = True)
@@ -284,9 +342,10 @@ def main():
 
     enwiktsite = wikipedia.getSite('en', 'geohashing') # loading a defined project's page
 
-    os.unlink("graticules.sqlite")
+#    os.unlink("graticules.sqlite")
 
-    db = GraticuleDatabase.GraticuleDatabase()
+#    db = GraticuleDatabase.GraticuleDatabase()
+    db = GraticuleDatabase.GraticuleDatabase("graticules.sqlite")
     all = db.getAllKeys()
 
     catdb = category.CategoryDatabase()
@@ -297,6 +356,7 @@ def main():
 #  by looking at the [[Category:Meetup on YYYY-MM-DD]] pages
 
     expedListPeople = parseExpedLists(enwiktsite)
+    expedListGrats = parseExpedListsGrats(enwiktsite)
 
     all_text = u""
     first_date_obj = get_last_day_avail(datetime.date.today() + datetime.timedelta(7))
@@ -307,22 +367,26 @@ def main():
             cur_dates.append(first_date_obj.isoformat())
             expedSums = ExpeditionSummaries.ExpeditionSummaries(enwiktsite, first_date_obj.isoformat(), db)
             expedListPeople = updateExpedLists(expedSums, expedListPeople)
+            expedListGrats = updateExpedListsGrats(expedSums, expedListGrats)
             first_date_obj = first_date_obj - datetime.timedelta(1)
 
         cur_dates.append(first_date_obj.isoformat())
         expedSums = ExpeditionSummaries.ExpeditionSummaries(enwiktsite, first_date_obj.isoformat(), db)
         expedListPeople = updateExpedLists(expedSums, expedListPeople)
+        expedListGrats = updateExpedListsGrats(expedSums, expedListGrats)
         first_date_obj = first_date_obj - datetime.timedelta(1)
 
         while (first_date_obj.weekday() > 4):
             cur_dates.append(first_date_obj.isoformat())
             expedSums = ExpeditionSummaries.ExpeditionSummaries(enwiktsite, first_date_obj.isoformat(), db)
             expedListPeople = updateExpedLists(expedSums, expedListPeople)
+            expedListGrats = updateExpedListsGrats(expedSums, expedListGrats)
             first_date_obj = first_date_obj - datetime.timedelta(1)
 
     cur_dates.append(first_date_obj.isoformat())
     expedSums = ExpeditionSummaries.ExpeditionSummaries(enwiktsite, first_date_obj.isoformat(), db)
     expedListPeople = updateExpedLists(expedSums, expedListPeople)
+    expedListGrats = updateExpedListsGrats(expedSums, expedListGrats)
     first_date = first_date_obj.isoformat()
 
     remove_dates(enwiktsite, cur_dates)
@@ -340,6 +404,7 @@ def main():
         return 1
 
     updateUserTexts(enwiktsite)
+    updateGratTexts(enwiktsite)
 
 #Create the [[Template:Expedition_summaries/YYYY-MM-DD]] pages for planning page dates
     putExpeditionSummaries(plan_dates, enwiktsite)
