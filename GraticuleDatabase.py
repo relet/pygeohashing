@@ -3,7 +3,7 @@
 
 import re, sys
 import wikipedia
-import sqlite
+import sqlite3
 
 re_grat = re.compile('\[\[(.*?)\| *([0-9\-]+, *[0-9\-]+) *\(.*?\) *\]\]')
 
@@ -41,7 +41,33 @@ class GraticuleDatabase:
     
     def addGraticule(self, lat, lon, page, name, country):
       iswater = lat+","+lon in name
-      self.cur.execute('insert or replace into graticules values (%s,%s,%s,%s,%s,%s)', (lat, lon, page.encode("utf-8"), name and name.encode("utf-8"), country and country.encode("utf-8"), iswater and "TRUE" or "FALSE")) #encode to utf-8 here?
+      if not page:
+	page = ""
+      if not name:
+	name = ""
+      if not country:
+	country = ""
+      ex_string = 'insert or replace into graticules values ("' + lat + '","' + lon + '","'
+      try:
+        ex_string += page.decode("utf-8")
+      except:
+        ex_string += page
+      ex_string += '","'
+      try:
+        ex_string += name.decode("utf-8")
+      except:
+        ex_string += name
+      ex_string += '","'
+      try:
+        ex_string += country.decode("utf-8")
+      except:
+        ex_string += country
+      ex_string += '","'
+      if iswater:
+	ex_string += "TRUE\")"
+      else:
+	ex_string += "FALSE\")"
+      self.cur.execute(ex_string) #encode to utf-8 here?
       self.db.commit()
 
     def parseGraticulePage(self, page):
@@ -81,7 +107,7 @@ class GraticuleDatabase:
       self.db.commit()
 
     def load(self, filename):
-      self.db = sqlite.connect(filename)
+      self.db = sqlite3.connect(filename)
       self.cur = self.db.cursor()
       self.cur.execute ('create table if not exists graticules (lat text, lon text, page text, name text, country text, water boolean)')
       self.cur.execute ('create index if not exists klatlon on graticules (lat, lon)')
@@ -90,9 +116,10 @@ class GraticuleDatabase:
 
     def getLatLon(self, lat, lon, unknownIsNumeric = False):
       try:
-        self.cur.execute('select page, name, country from graticules where lat = %s and lon = %s', (lat, lon))
+	execute_text = 'select page, name, country from graticules where lat = \'' + lat + "' and lon = '" + lon + "'" 
+        self.cur.execute(execute_text)
         page, name, country = self.cur.fetchone()
-        return (page.decode("utf-8"), name and name.decode("utf-8"), country and country.decode("utf-8"))
+        return (page, name, country)
       except:
         if unknownIsNumeric:
           return ("%s,%s" % (lat,lon))
