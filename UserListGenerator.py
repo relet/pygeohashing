@@ -104,12 +104,15 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
   usernames  = {}
 
   if "[[Category:Not reached - Did not attempt]]" in text:
+    print "Ignoring participants because expedition wasn't attempted"
     return []
 
   if "[[Category:Tagged for deletion]]" in text:
+    print "Ignoring participants because expedition page is marked for deletion"
     return []
 
   if len(re.findall("\{\{\s*delete", text)) > 0:
+    print "Ignoring participants because expedition page is marked for deletion"
     return []
 
   scoring = [
