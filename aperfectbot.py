@@ -61,15 +61,7 @@ def date_page_write(date, site):
 
 #For displaying dates in a different manner than normal
 def holiday_lookup(date):
-    if(date == u"2009-07-07"):
-        return u"2009-07-07|2009-07-07 (Elbie's Birthday)"
-    if(date == u"2009-07-01"):
-        return u"2009-07-01|2009-07-01 (Canada Day)"
-    if(date == u"2009-07-04"):
-        return u"2009-07-04|2009-07-04 (Independence Day, United States of America)"
-
-    else:
-        return date
+    return date
 
 expedListPeople = {}
 expedListGrats = {}
@@ -105,8 +97,8 @@ def get_old_dates(site, db):
 
     for date in match_list:
         expedSum = ExpeditionSummaries.ExpeditionSummaries(site, date, db)
-        expedListPeople = updateExpedLists(expedSum, expedListPeople)
-        expedListGrats = updateExpedListsGrats(expedSum, expedListGrats)
+        expedListPeople = updateExpedLists(expedSum, expedListPeople, date)
+        expedListGrats = updateExpedListsGrats(expedSum, expedListGrats, date)
 
     remove_dates(site, match_list)
 
@@ -235,33 +227,42 @@ def getExpeditions(site, person, person_entry):
 #Get all the current per-user expedition lists
 def parseExpedLists(site):
     people_hash = getPersonList(site)
-    expedListPeople = {}
+    localExpedListPeople = {}
 
     for person in people_hash.keys():
       if(len(person) != 0):
-        expedListPeople[person] = getExpeditions(site, person, people_hash[person])
-    return expedListPeople
+        localExpedListPeople[person] = getExpeditions(site, person, people_hash[person])
+    return localExpedListPeople
 
 #Get all the current per-graticule expedition lists
 def parseExpedListsGrats(site):
     grat_hash = getGratList(site)
-    expedListGrats = {}
+    localExpedListGrats = {}
 
     for grat in grat_hash.keys():
       if(len(grat) != 0):
-        expedListGrats[grat] = getExpeditions(site, grat, grat_hash[grat])
-    return expedListGrats
+        localExpedListGrats[grat] = getExpeditions(site, grat, grat_hash[grat])
+    return localExpedListGrats
 
 #Update the expedition lists with new data found this run
-def updateExpedLists(expedSums, expedListPeople):
+def updateExpedLists(expedSums, expedListPeople, date):
     for person in expedListPeople.keys():
       if(len(person) > 0):
+	for exped_name in expedListPeople[person][1].keys():
+          if date in exped_name:
+            print "Removing",exped_name,"from",person
+            del expedListPeople[person][1][exped_name]
         expedListPeople[person][1].update(expedSums.getSubFormats(format = expedListPeople[person][0], user = person, oldText = expedListPeople[person][1]))
     return expedListPeople
 
-def updateExpedListsGrats(expedSums, expedListGrats):
+def updateExpedListsGrats(expedSums, expedListGrats, date):
+    print "Operating on",date
     for grat in expedListGrats.keys():
       if(len(grat) > 0):
+	for exped_name in expedListGrats[grat][1].keys():
+          if date in exped_name:
+            print "Removing",exped_name,"from",grat
+            del expedListGrats[grat][1][exped_name]
         expedListGrats[grat][1].update(expedSums.getSubFormats(format = expedListGrats[grat][0], grat = grat, oldText = expedListGrats[grat][1]))
     return expedListGrats
 
@@ -337,8 +338,8 @@ def main():
     global expedListGrats
 #    wikipedia.verbose = 1
     titleOfPageToLoad = u'2009-06-14_49_-122' # The "u" before the title means Unicode, important for special characters
-#    wikipedia.put_throttle.setDelay(10, absolute = True)
-#    wikipedia.get_throttle.setDelay(10, absolute = True)
+    wikipedia.put_throttle.setDelay(5, absolute = True)
+#    wikipedia.get_throttle.setDelay(5, absolute = True)
 
     enwiktsite = wikipedia.getSite('en', 'geohashing') # loading a defined project's page
 
@@ -366,27 +367,27 @@ def main():
         while (first_date_obj > datetime.date.today()):
             cur_dates.append(first_date_obj.isoformat())
             expedSums = ExpeditionSummaries.ExpeditionSummaries(enwiktsite, first_date_obj.isoformat(), db)
-            expedListPeople = updateExpedLists(expedSums, expedListPeople)
-            expedListGrats = updateExpedListsGrats(expedSums, expedListGrats)
+            expedListPeople = updateExpedLists(expedSums, expedListPeople, first_date_obj.isoformat())
+            expedListGrats = updateExpedListsGrats(expedSums, expedListGrats, first_date_obj.isoformat())
             first_date_obj = first_date_obj - datetime.timedelta(1)
 
         cur_dates.append(first_date_obj.isoformat())
         expedSums = ExpeditionSummaries.ExpeditionSummaries(enwiktsite, first_date_obj.isoformat(), db)
-        expedListPeople = updateExpedLists(expedSums, expedListPeople)
-        expedListGrats = updateExpedListsGrats(expedSums, expedListGrats)
+        expedListPeople = updateExpedLists(expedSums, expedListPeople, first_date_obj.isoformat())
+        expedListGrats = updateExpedListsGrats(expedSums, expedListGrats, first_date_obj.isoformat())
         first_date_obj = first_date_obj - datetime.timedelta(1)
 
         while (first_date_obj.weekday() > 4):
             cur_dates.append(first_date_obj.isoformat())
             expedSums = ExpeditionSummaries.ExpeditionSummaries(enwiktsite, first_date_obj.isoformat(), db)
-            expedListPeople = updateExpedLists(expedSums, expedListPeople)
-            expedListGrats = updateExpedListsGrats(expedSums, expedListGrats)
+            expedListPeople = updateExpedLists(expedSums, expedListPeople, first_date_obj.isoformat())
+            expedListGrats = updateExpedListsGrats(expedSums, expedListGrats, first_date_obj.isoformat())
             first_date_obj = first_date_obj - datetime.timedelta(1)
 
     cur_dates.append(first_date_obj.isoformat())
     expedSums = ExpeditionSummaries.ExpeditionSummaries(enwiktsite, first_date_obj.isoformat(), db)
-    expedListPeople = updateExpedLists(expedSums, expedListPeople)
-    expedListGrats = updateExpedListsGrats(expedSums, expedListGrats)
+    expedListPeople = updateExpedLists(expedSums, expedListPeople, first_date_obj.isoformat())
+    expedListGrats = updateExpedListsGrats(expedSums, expedListGrats, first_date_obj.isoformat())
     first_date = first_date_obj.isoformat()
 
     remove_dates(enwiktsite, cur_dates)
