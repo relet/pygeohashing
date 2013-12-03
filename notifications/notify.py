@@ -7,13 +7,26 @@ from email.mime.text import MIMEText
 def send_msg(to_addr, user_msg, lat, lon, centicule, date, username, password):
 	print "Send message to",to_addr,"with user msg",user_msg,"about geohash at",lat,lon,"for",date.isoformat(),"because they registered for",centicule,"centicule."
 
-	msg = date.isoformat() + " Notification for the location " + str(lat) + ", " + str(lon) + "\n"
-	msg += "These coordinates fall in centicule {:02}\n".format(centicule)
-	msg += "Message: " + user_msg + "\n"
-	msg += "If this note was sent before 9:30 AM US Eastern time, the coordinates may not be valid."
+	msg = "<html><body><p>"
+	msg += date.isoformat() + " Notification for the location " + str(lat) + ", " + str(lon) + "<br></p>"
+	msg += "<p>These coordinates fall in centicule {:02}<br></p>".format(centicule)
+	msg += '<p><img src="http://carabiner.peeron.com/cgi-bin/static.cgi?date=' + date.isoformat() + '&lat=' + str(int(lat)) + '&lon=' + str(int(lon)) + '&zoom=8&width=300&height=400"><br></p>'
+	msg += '<p><a href="https://maps.google.com/?ie=UTF8&ll=' + str(lat) + ',' + str(lon) + '&z=9&q=loc:' + str(lat) + ',' + str(lon) + '">Google Maps link</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
+	msg += '<a href="http://wiki.xkcd.com/geohashing/' + str(int(lat)) + ',' + str(int(lon)) + '">Graticule Page</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
+	msg += '<a href="http://wiki.xkcd.com/geohashing/' + date.isoformat() + '_' + str(int(lat)) + '_' + str(int(lon)) + '">Expedition Page</a><br></p>'
+	msg += "<p><br>Message: " + user_msg + "<br></p>"
+	msg += "<p>If this note was sent before 9:30 AM US Eastern time, the coordinates may not be valid.</p>"
 	print msg
 
-	emailmsg = MIMEText(msg)
+        for body_charset in 'US-ASCII', 'ISO-8859-1', 'UTF-8':
+                try:
+                    msg.encode(body_charset)
+                except UnicodeError:
+                    pass
+                else:
+                    break
+
+        emailmsg = MIMEText(msg.encode(body_charset), "html", body_charset)
 	emailmsg['Subject'] = "Geohashing notifications."
 	emailmsg['To'] = to_addr
 	emailmsg['From'] = username
@@ -98,7 +111,7 @@ for line in notify_file:
 	notify_cent_list_arr = re.split('\s+', notify_cent_list)
 	if '*' in notify_cent_list_arr:
 		send_msg(to_addr, notify_msg, lat, lon, centicule, date, username, password)	
-	if str(centicule) in notify_cent_list_arr:
+	if str(centicule).zfill(2) in notify_cent_list_arr:
 		send_msg(to_addr, notify_msg, lat, lon, centicule, date, username, password)	
 
 notify_file.close()
