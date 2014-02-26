@@ -3,6 +3,7 @@ import time
 import wikipedia
 import smtplib
 from email.mime.text import MIMEText
+import codecs
 
 def send_msg(to_addr, user_msg, lat, lon, centicule, date, username, password):
 	print "Send message to",to_addr,"with user msg",user_msg,"about geohash at",lat,lon,"for",date.isoformat(),"because they registered for",centicule,"centicule."
@@ -60,7 +61,7 @@ while non_lat_frac == 0:
 w_lat_frac, w_lon_frac = get_fractions(0, 0, datetime.date.today() + datetime.timedelta(1))
 
 if len(sys.argv) > 1:
-	notify_file = open(sys.argv[1], 'r')
+	notify_file = codecs.open(sys.argv[1], mode='r', encoding='utf-8')
 else:
 	print "ERROR: Need notification file"
 	sys.exit(1)
