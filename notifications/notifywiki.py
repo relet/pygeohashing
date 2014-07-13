@@ -6,15 +6,18 @@ from email.mime.text import MIMEText
 import codecs
 
 def send_msg(to_addr, user_msg, lat, lon, centicule, date, username, password):
+	neglat = "-" if lat < 0 and lat > -1 else ""
+	neglon = "-" if lon < 0 and lon > -1 else ""
+
 	print "Send message to",to_addr,"with user msg",user_msg,"about geohash at",lat,lon,"for",date.isoformat(),"because they registered for",centicule,"centicule."
 
 	msg = "<html><body><p>"
 	msg += date.isoformat() + " Notification for the location " + str(lat) + ", " + str(lon) + "<br></p>"
 	msg += "<p>These coordinates fall in centicule {:02}<br></p>".format(centicule)
-	msg += '<p><img src="http://carabiner.peeron.com/cgi-bin/static.cgi?date=' + date.isoformat() + '&lat=' + str(int(lat)) + '&lon=' + str(int(lon)) + '&zoom=8&width=300&height=400"><br></p>'
+	msg += '<p><img src="http://carabiner.peeron.com/cgi-bin/static.cgi?date=' + date.isoformat() + '&lat=' + neglat + str(int(lat)) + '&lon=' + neglon + str(int(lon)) + '&zoom=8&width=300&height=400"><br></p>'
 	msg += '<p><a href="https://maps.google.com/?ie=UTF8&ll=' + str(lat) + ',' + str(lon) + '&z=9&q=loc:' + str(lat) + ',' + str(lon) + '">Google Maps link</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
-	msg += '<a href="http://wiki.xkcd.com/geohashing/' + str(int(lat)) + ',' + str(int(lon)) + '">Graticule Page</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
-	msg += '<a href="http://wiki.xkcd.com/geohashing/' + date.isoformat() + '_' + str(int(lat)) + '_' + str(int(lon)) + '">Expedition Page</a><br></p>'
+	msg += '<a href="http://wiki.xkcd.com/geohashing/' + neglat + str(int(lat)) + ',' + neglon + str(int(lon)) + '">Graticule Page</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
+	msg += '<a href="http://wiki.xkcd.com/geohashing/' + date.isoformat() + '_' + neglat + str(int(lat)) + '_' + neglon + str(int(lon)) + '">Expedition Page</a><br></p>'
 	msg += "<p><br>Message: " + user_msg + "<br></p>"
 	msg += "<p>If this note was sent before 9:30 AM US Eastern time, the coordinates may not be valid.</p>"
 	print msg
