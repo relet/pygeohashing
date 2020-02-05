@@ -14,14 +14,13 @@ RE_LINKS = re.compile("\s*((?:\[\[.+?\]\])|(?:[^,[]+))\s*,?")
 failcount = 0
 total = 0
 for test in library:
-  ftest = open("tests/"+test,"r").read()
+  filp = open("tests/"+test,"r")
 
   #we expect a comma separated list of participants in the first line
   #we expect a comma separated list of participants in links form in the second line
-  participants = ftest[:ftest.index("\n")]
-  rest         = ftest[ftest.index("\n")+1:] #split off the rest
-  links        = rest [:rest.index("\n")]
-  report       = rest [rest.index("\n")+1:] #split off the rest
+  participants = filp.readline()
+  links        = filp.readline()
+  report       = filp.read()
   correct_parts = [x.lower().strip() for x in participants.split(",") if len(x.strip())>0]
   correct_links = [x.strip() for x in RE_LINKS.findall(links) if len(x.strip())>0]
   result_parts = identifyParticipants(report, wikipedia.Page(site, test), None) #we might have to connect to the wiki to get the history / what-links-here

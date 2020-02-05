@@ -1,5 +1,6 @@
 
-import re, wikipedia, datetime
+import pywikibot
+import re, datetime
 from UserListGenerator import *
 
 date_comment = u'<!--DATE-->'
@@ -63,7 +64,7 @@ class Expedition:
   '''
   def __init__(self, site, pageName, db, format = None):
     self.pageName = pageName
-    self.page = wikipedia.Page(site, self.pageName)
+    self.page = pywikibot.Page(site, self.pageName)
     pageNameParts = re.split("[ _]+", self.pageName)
     self.date = pageNameParts[0]
     self.lat = pageNameParts[1]

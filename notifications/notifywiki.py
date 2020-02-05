@@ -9,7 +9,7 @@ def send_msg(to_addr, user_msg, lat, lon, centicule, date, username, password):
 	neglat = "-" if lat < 0 and lat > -1 else ""
 	neglon = "-" if lon < 0 and lon > -1 else ""
 
-	print "Send message to",to_addr,"with user msg",user_msg,"about geohash at",lat,lon,"for",date.isoformat(),"because they registered for",centicule,"centicule."
+	print "Send message to",to_addr,"with user msg about geohash at",lat,lon,"for",date.isoformat(),"because they registered for",centicule,"centicule."
 
 	msg = "<html><body><p>"
 	msg += date.isoformat() + " Notification for the location " + str(lat) + ", " + str(lon) + "<br></p>"
@@ -20,7 +20,6 @@ def send_msg(to_addr, user_msg, lat, lon, centicule, date, username, password):
 	msg += '<a href="http://wiki.xkcd.com/geohashing/' + date.isoformat() + '_' + neglat + str(int(lat)) + '_' + neglon + str(int(lon)) + '">Expedition Page</a><br></p>'
 	msg += "<p><br>Message: " + user_msg + "<br></p>"
 	msg += "<p>If this note was sent before 9:30 AM US Eastern time, the coordinates may not be valid.</p>"
-	print msg
 
 	for body_charset in 'US-ASCII', 'ISO-8859-1', 'UTF-8':
 		try:
@@ -29,6 +28,7 @@ def send_msg(to_addr, user_msg, lat, lon, centicule, date, username, password):
         	    pass
 	        else:
         	    break
+	print msg.encode(body_charset)
 
 	emailmsg = MIMEText(msg.encode(body_charset), "html", body_charset)
 	emailmsg['Subject'] = "Geohashing notifications."
@@ -90,7 +90,7 @@ for line in notify_file:
 	to_addr, wiki_page = re.split('\|', line)
 
 	print "To addr:",to_addr
-	print "Wiki page:",wiki_page
+#	print "Wiki page:",wiki_page
 
 	user_page = wikipedia.Page(enwiktsite, wiki_page)
 	user_page_text = user_page.get()

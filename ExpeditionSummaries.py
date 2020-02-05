@@ -1,5 +1,7 @@
-import category, re, Expedition
-import wikipedia, datetime
+import pywikibot
+from pywikibot import Category
+import re, Expedition
+import datetime
 from UserListGenerator import *
 
 class ExpeditionSummaries:
@@ -18,16 +20,16 @@ class ExpeditionSummaries:
     for page in self.pageList:
       if(re.match("\d{4}-\d{2}-\d{2} [-0-9]{1,4} [-0-9]{1,4}$", page.title())):
         print "Parsing page",self.pageList.index(page),"of",len(self.pageList),":",page.title()
-        exped = Expedition.Expedition(page.site(), page.title(), db)
+        exped = Expedition.Expedition(page.site, page.title(), db)
         self.expedList.append(exped)
 #        print exped.subFormat()
         allSummaries.append(exped.getExpeditionSummary())
         
 
-    page = wikipedia.Page(self.site, "Template:Expedition_summaries/" + self.date)
+    page = pywikibot.Page(self.site, "Template:Expedition_summaries/" + self.date)
     self._pageWrite(page, u'<noinclude>This page is automatically generated.  Any edits to this page will be overwritten by a bot.\n{| style="width: 100%; border: 1px solid grey; border-collapse:collapse;" cellpadding="5" cellspacing="0" border="1"</noinclude>\n|-\n|' + "\n|-\n|".join(allSummaries) + '\n<noinclude>\n|-\n|}\n</noinclude>')
-    if(datetime.date.today().isoformat() <= self.date):
-        self._datePageWrite()
+    # if(datetime.date.today().isoformat() <= self.date):
+    self._datePageWrite()
 
   def _pageWrite(self, page, text):
     if(self._checkBanana() == 0):
@@ -40,13 +42,13 @@ class ExpeditionSummaries:
     pageText += u"{{auto gallery2|" + self.date + "}}\n"
     pageText += u"<noinclude>{{expedition summaries|" + self.date + "}}</noinclude>\n"
 
-    page = wikipedia.Page(self.site, self.date)
+    page = pywikibot.Page(self.site, self.date)
     if(not page.exists()):
-      page = wikipedia.Page(self.site, self.date)
+      page = pywikibot.Page(self.site, self.date)
       self._pageWrite(page, pageText)
 
   def _checkBanana(self):
-    checkPage = wikipedia.Page(self.site, "User:AperfectBot")
+    checkPage = pywikibot.Page(self.site, "User:AperfectBot")
     checkText = checkPage.get(True)
     checkRegex = getSectionRegex(checkText, "distraction banana", False).strip()
     if(len(checkRegex) == 0):
@@ -70,10 +72,10 @@ class ExpeditionSummaries:
     return formats
 
   def _getAllCategoryPages(self):
-    page = wikipedia.Page(self.site, "Category:Meetup on " + self.date)
+    page = pywikibot.Page(self.site, "Category:Meetup on " + self.date)
     pageText = u"[[Category:Meetup in " + re.sub("-\d{2}$","",self.date) + u"]]"
     self._pageWrite(page, pageText)
 
-    cat = category.catlib.Category(self.site, "Meetup on " + self.date)
+    cat = Category(self.site, "Meetup on " + self.date)
     articleList = cat.articlesList()
     return articleList

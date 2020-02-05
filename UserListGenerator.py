@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import wikipedia, re, string
+import pywikibot
+import re, string
 import math, sys
 
 MAX_USERNAME_LENGTH = 31
@@ -11,7 +12,7 @@ RE_HTMLCOMMENT = re.compile("\<\!\-\-.*?\-\-\>", re.DOTALL)
 
 # anything within a [[User:x|y]] style link 
 re_userlink = '\[\[[Uu]ser\s*:\s*(.{1,%i}?)\s*(?:\|\s*(?:.+?)\s*)?\]\]' % MAX_USERNAME_LENGTH
-re_userstring = '([\w^,&\']{1,%i})' % MAX_USERNAME_LENGTH
+re_userstring = '([^,&\n\-\[\|\(\)]{1,%i})' % MAX_USERNAME_LENGTH
 # the same, or just an arbitrary string
 re_maybelink = '(?:'+re_userlink+'|'+re_userstring+')'
 # any enumerator
@@ -39,7 +40,7 @@ RE_COMMONPLACES = re.compile('(?:reached by)\s+('+re_maybelist+')\s*\.')
 RE_BOLDED = re.compile('\\\'{3}('+re_maybelist+')') #does not work!
 RE_PARALIST = re.compile('\n\n('+re_maybelink+').*?(?=\n\n)', re.MULTILINE ^ re.DOTALL)
 
-improbablenames = ["", " ", "a", "and", "i", "i'll", "we", "the", "one", "two", "three", "all of us", "all attendees", "everyone", "his", "her", "probably", "drag", "drag-along", "1", "2", "3", "4", "5", "wife", "family", "friends"]
+improbablenames = ["", " ", "a", "and", "i", "i'll", "we", "the", "one", "two", "three", "all of us", "all attendees", "everyone", "his", "her", "probably", "drag", "drag-along", "1", "2", "3", "4", "5", "wife", "family", "friends", "probably."]
 
 debug_fuzz = None
 debug_links = None

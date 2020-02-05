@@ -1,9 +1,11 @@
 import sys
 sys.path
 
-import wikipedia, re, string
+import pywikibot
+import re, string
 import GraticuleDatabase
-import sys, category, datetime
+from pywikibot import Category
+import sys, datetime
 import hashlib, struct, urllib
 import time
 from UserListGenerator import *
@@ -21,7 +23,8 @@ RE_EXPLIST_COMMENT = re.compile('\<\!\-\-EXPLIST\-\-\>(.*)\<\!\-\-EXPLIST\-\-\>'
 
 # You must pass a date after the last available one
 def get_last_day_avail(date):
-    djia = urllib.urlopen((date - datetime.timedelta(1)).strftime("http://irc.peeron.com/xkcd/map/data/%Y/%m/%d")).read()
+    #djia = urllib.urlopen((date - datetime.timedelta(1)).strftime("http://carabiner.peeron.com/xkcd/map/data/%Y/%m/%d")).read()
+    djia = urllib.urlopen((date - datetime.timedelta(1)).strftime("http://geo.crox.net/djia/%Y/%m/%d")).read()
     if djia.find('404 Not Found') >= 0:
         date = get_last_day_avail(date - datetime.timedelta(1))
     return date
@@ -32,7 +35,7 @@ def get_page_title_sections(title):
 
 #Look for the failsafe stop
 def check_banana(site):
-    check_page = wikipedia.Page(site, "User:AperfectBot")
+    check_page = pywikibot.Page(site, "User:AperfectBot")
     check_text = check_page.get(True)
     check_arr = re.split("\n", check_text)
     check_text = u" ".join(check_arr)
@@ -53,9 +56,9 @@ def date_page_write(date, site):
     page_text += u"{{auto gallery2|" + date + "}}\n"
     page_text += u"<noinclude>{{expedition summaries|" + date + "}}</noinclude>\n"
 
-    page = wikipedia.Page(site, date)
+    page = pywikibot.Page(site, date)
     if(not page.exists()):
-        page = wikipedia.Page(site, date)
+        page = pywikibot.Page(site, date)
         page_write(page, page_text, site)
         add_date(site, date)
 
@@ -71,7 +74,7 @@ def get_old_dates(site, db):
     global expedListPeople
     global expedListGrats
 
-    page = wikipedia.Page(site, u"User:AperfectBot/Update_requests")
+    page = pywikibot.Page(site, u"User:AperfectBot/Update_requests")
     all_text = page.get()
 
     matches = re.findall("(''')?(\d{4}-\d{2}-\d{2})(''')?", all_text)
@@ -82,7 +85,7 @@ def get_old_dates(site, db):
     for i in range(0, min(len(matches), 3)):
         match_list.append(matches[i][1])
 
-    page = wikipedia.Page(site, u"User:AperfectBot/Update_requests")
+    page = pywikibot.Page(site, u"User:AperfectBot/Update_requests")
     page_write(page, all_text, site)
 
     fh = open("aperfectbot_updates.txt", "r")
@@ -106,7 +109,7 @@ def get_old_dates(site, db):
 
 #Clear off the dates which were just updated
 def remove_dates(site, dates):
-    page = wikipedia.Page(site, u"User:AperfectBot/Update_requests")
+    page = pywikibot.Page(site, u"User:AperfectBot/Update_requests")
     all_text = page.get()    
 
     fh = open("aperfectbot_updates.txt", "r")
@@ -118,7 +121,7 @@ def remove_dates(site, dates):
         all_text_file = re.sub("(''')?" + i + "(''')?\n*", "", all_text_file)
         all_text_file += "\n" + i
 
-    page = wikipedia.Page(site, u"User:AperfectBot/Update_requests")
+    page = pywikibot.Page(site, u"User:AperfectBot/Update_requests")
     page_write(page, all_text, site)
 
     fh = open("aperfectbot_updates.txt", "w")
@@ -127,10 +130,10 @@ def remove_dates(site, dates):
 
 
 def add_date(site, date):
-    page = wikipedia.Page(site, u"User:AperfectBot/Update_requests")
+    page = pywikibot.Page(site, u"User:AperfectBot/Update_requests")
     all_text = page.get()    
     all_text += "\n\n" + date
-    page = wikipedia.Page(site, u"User:AperfectBot/Update_requests")
+    page = pywikibot.Page(site, u"User:AperfectBot/Update_requests")
     page_write(page, all_text, site)
 
 
@@ -158,21 +161,21 @@ def putExpeditionSummaries(summaries, site):
     for i in date_keys:
         all_text = u"<noinclude>This page is automatically generated.  Any edits to this page will be overwritten by a bot.\n\n</noinclude>\n|-\n|"
         all_text += u"\n|-\n|".join(summaries[i])
-        page = wikipedia.Page(site, "Template:Expedition_summaries/" + i)
+        page = pywikibot.Page(site, "Template:Expedition_summaries/" + i)
         page_write(page, all_text, site)
-#Only update the date page if its in the future, and its 9:** AM
-        if(datetime.date.today().isoformat() <= i):
-            date_page_write(i, site)
+        #Only update the date page if its in the future, and its 9:** AM
+        # if(datetime.date.today().isoformat() <= i):
+        date_page_write(i, site)
 
 #Get the list of people who have requested expedition lists
 def getPersonList(site):
-    page = wikipedia.Page(site, u"User:AperfectBot/User_expedition_lists")
+    page = pywikibot.Page(site, u"User:AperfectBot/User_expedition_lists")
     people_hash = getSections(page.get())
     return people_hash
 
 #Get the list of people who have requested expedition lists
 def getGratList(site):
-    page = wikipedia.Page(site, u"User:AperfectBot/Grat_expedition_lists")
+    page = pywikibot.Page(site, u"User:AperfectBot/Grat_expedition_lists")
     grat_hash = getSections(page.get())
     return grat_hash
     
@@ -198,7 +201,7 @@ def getExpeditions(site, person, person_entry):
 
     text_arr = re.split('\n', person_entry)
 #    print "Fetching ", text_arr[0]
-    page = wikipedia.Page(site, text_arr[0])
+    page = pywikibot.Page(site, text_arr[0])
     if(page.exists()):
       page_text = page.get()
     else:
@@ -250,7 +253,7 @@ def updateExpedLists(expedSums, expedListPeople, date):
       if(len(person) > 0):
 	for exped_name in expedListPeople[person][1].keys():
           if date in exped_name:
-            print "Removing",exped_name,"from",person
+            #print "Removing",exped_name,"from",person
             del expedListPeople[person][1][exped_name]
         expedListPeople[person][1].update(expedSums.getSubFormats(format = expedListPeople[person][0], user = person, oldText = expedListPeople[person][1]))
     return expedListPeople
@@ -261,7 +264,7 @@ def updateExpedListsGrats(expedSums, expedListGrats, date):
       if(len(grat) > 0):
 	for exped_name in expedListGrats[grat][1].keys():
           if date in exped_name:
-            print "Removing",exped_name,"from",grat
+            #print "Removing",exped_name,"from",grat
             del expedListGrats[grat][1][exped_name]
         expedListGrats[grat][1].update(expedSums.getSubFormats(format = expedListGrats[grat][0], grat = grat, oldText = expedListGrats[grat][1]))
     return expedListGrats
@@ -298,10 +301,10 @@ def updateGratTexts(site):
 
 #Write the expedition list for a specific person or graticule
 def writeExpedListPerson(site, expedList):
-    page = wikipedia.Page(site, expedList[2])
+    page = pywikibot.Page(site, expedList[2])
     if(not page.exists()):
       page_text = u"<!--EXPLIST-->" + u"\n<!--EXPLIST-->"
-      page = wikipedia.Page(site, expedList[2])
+      page = pywikibot.Page(site, expedList[2])
       page_write(page, page_text, site)
     else:
       page_text = page.get()
@@ -338,20 +341,23 @@ def main():
     global expedListGrats
 #    wikipedia.verbose = 1
     titleOfPageToLoad = u'2009-06-14_49_-122' # The "u" before the title means Unicode, important for special characters
-    wikipedia.put_throttle.setDelay(5, absolute = True)
+#    pywikibot.put_throttle.setDelay(5, absolute = True)
 #    wikipedia.get_throttle.setDelay(5, absolute = True)
 
-    enwiktsite = wikipedia.getSite('en', 'geohashing') # loading a defined project's page
+    enwiktsite = pywikibot.getSite('en', 'geohashing') # loading a defined project's page
 
 #    os.unlink("graticules.sqlite")
 
 #    db = GraticuleDatabase.GraticuleDatabase()
+    print "Before grat db"
     db = GraticuleDatabase.GraticuleDatabase("graticules.sqlite")
+    print "After grat db"
     all = db.getAllKeys()
 
-    catdb = category.CategoryDatabase()
+    # catdb = Category.CategoryDatabase()
 
-    pp_list2 = get_all_category_pages(enwiktsite, u"Category:Expedition_planning", catdb)
+    pp_list2 = Category(enwiktsite, u"Category:Expedition_planning").articles()
+    # pp_list2 = get_all_category_pages(enwiktsite, u"Category:Expedition_planning", catdb)
 
 #Produce a list of all pages from 3 weekdays ago through when coordinates are available
 #  by looking at the [[Category:Meetup on YYYY-MM-DD]] pages
@@ -407,13 +413,15 @@ def main():
     updateUserTexts(enwiktsite)
     updateGratTexts(enwiktsite)
 
+    print "cur_dates: ",cur_dates
+    print "plan_dates: ",plan_dates
 #Create the [[Template:Expedition_summaries/YYYY-MM-DD]] pages for planning page dates
     putExpeditionSummaries(plan_dates, enwiktsite)
 
 #Build up the text for [[Template:Recent_expeditions]]
     recent_expedition_page_name = u"Template:Recent_expeditions"
 
-    recent_exp_page = wikipedia.Page(enwiktsite, recent_expedition_page_name)
+    recent_exp_page = pywikibot.Page(enwiktsite, recent_expedition_page_name)
     recent_exp_text = recent_exp_page.get()
     recent_exp_res = re.findall("=== \[\[(\d{4}-\d{2}-\d{2}).*?\]\] ===\n([^=]*)", recent_exp_text, re.S)
 
@@ -445,7 +453,7 @@ def main():
             summary_text += u"{{Expedition_summaries|" + i + u"}}\n"
             summary_text += u"<!--Insert manual updates below this line.  Manual updates may not contain equal signs-->\n"
 
-    recent_exp_page = wikipedia.Page(enwiktsite, recent_expedition_page_name)
+    recent_exp_page = pywikibot.Page(enwiktsite, recent_expedition_page_name)
     page_write(recent_exp_page, summary_text, enwiktsite)
 
 
@@ -462,5 +470,5 @@ if __name__ == '__main__':
 
         main()
     finally:
-        wikipedia.stopme()
+        pywikibot.stopme()
 

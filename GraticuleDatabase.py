@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import re, sys
-import wikipedia
+import pywikibot
 import sqlite3
 
 re_grat = re.compile('\[\[(.*?)\| *([0-9\-]+, *[0-9\-]+) *\(.*?\) *\]\]')
@@ -93,15 +93,15 @@ class GraticuleDatabase:
       if filename:
         self.load(filename)
       else:
-        site = wikipedia.getSite()
+        site = pywikibot.getSite()
         self.load("graticules.sqlite")
-        self.parseGraticulePage(wikipedia.Page(site, u"All graticules/Eurasia"))
-        self.parseGraticulePage(wikipedia.Page(site, u"All graticules/Australasia"))
-        self.parseGraticulePage(wikipedia.Page(site, u"All graticules/Africa"))
-        self.parseGraticulePage(wikipedia.Page(site, u"All graticules/North America"))
-        self.parseGraticulePage(wikipedia.Page(site, u"All graticules/South America"))
-        self.parseGraticulePage(wikipedia.Page(site, u"All graticules/Oceans"))
-        self.parseGraticulePage(wikipedia.Page(site, u"All graticules/Antarctica"))
+        self.parseGraticulePage(pywikibot.Page(site, u"All graticules/Eurasia"))
+        self.parseGraticulePage(pywikibot.Page(site, u"All graticules/Australasia"))
+        self.parseGraticulePage(pywikibot.Page(site, u"All graticules/Africa"))
+        self.parseGraticulePage(pywikibot.Page(site, u"All graticules/North America"))
+        self.parseGraticulePage(pywikibot.Page(site, u"All graticules/South America"))
+        self.parseGraticulePage(pywikibot.Page(site, u"All graticules/Oceans"))
+        self.parseGraticulePage(pywikibot.Page(site, u"All graticules/Antarctica"))
 
     def dump(self):
       self.db.commit()

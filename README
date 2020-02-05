@@ -1,0 +1,14 @@
+How to set up aperfectbot:
+
+* Get a bot user.  This makes it so the bot's edits don't flood recent changes on the wiki, and makes it apparent that these edits were done automatically.
+* Download pywikibot module.
+* Copy the geohashing_family.py into pywikibot/families
+* Generally follow these instructions https://www.mediawiki.org/wiki/Manual:Pywikibot/Use_on_third-party_wikis
+* Generate a full date list for automatic updating of old date pages.
+	* python datelist_gen.py > aperfectbot_updates.txt
+* Generate the graticules database (this will take some time)
+	* run the bot once in the directory you intend to keep it, but you must uncomment the 'db = GraticulesDatabase.GraticulesDatabase()' line to actually build the DB.
+	* You'll want to comment that line back out once you get a successful run, because it takes a LONG time to build the db.
+* Start up a cron job to run the bot automatically
+	* Here's the one I used forever:
+* * * * * cd /path/to/pygeohashing; if [ ! -e aperfectbot.lock ]; then date > aperfectbot.lock; PYTHONPATH=/path/to/pywikibot/ python aperfectbot.py ; rm aperfectbot.lock; fi
