@@ -34,7 +34,11 @@ class ExpeditionSummaries:
   def _pageWrite(self, page, text):
     if(self._checkBanana() == 0):
 #      print "Would put page with",text
-      page.put(text, u"Ook.")
+      old_text = page.get()
+      if (text == old_text):
+        print "Page",page.title(),"has not changed, skipping"
+      else:
+        page.put(text, u"Ook.")
     
   def _datePageWrite(self):
     pageText = u"<noinclude>{{date navigation}}</noinclude>\n"

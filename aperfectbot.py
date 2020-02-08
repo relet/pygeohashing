@@ -11,6 +11,7 @@ import time
 from UserListGenerator import *
 import Expedition, ExpeditionSummaries
 import os
+import copy
 
 #ccodes  = {}
 #for line in open("countryCodes.txt","r"):
@@ -47,7 +48,11 @@ def check_banana(site):
 
 #A macro for writing pages out    
 def page_write(page, text, site):
-    page.put(text, u"Ook.")
+    old_text = page.get()
+    if (text == old_text):
+        print "Page",page.title(),"has not changed, skipping"
+    else:
+        page.put(text, u"Ook.")
 
 #Write a date page if it doesn't already exist.
 def date_page_write(date, site):
@@ -278,12 +283,16 @@ def updateUserTexts(site):
     people_hash = getPersonList(site)
     for person in people_hash.keys():
       if(len(person) > 0):
+        if (expedListPeople[person] == expedListPeopleOrig[person]):
+          print "Page", expedListPeople[person][2], "has not changed, skipping"
+          continue
+          
         personExpeds = getExpeditions(site, person, people_hash[person])
         for date in personExpeds[1].keys():
           matchObj = RE_USERTEXT_COMMENT.search(personExpeds[1][date])
           if(matchObj != None):
             expedListPeople[person][1][date] = RE_USERTEXT_COMMENT.sub(matchObj.group(0),expedListPeople[person][1][date])
-        writeExpedListPerson(site, expedListPeople[person])
+        writeExpedListPerson(site, expedListPeople[person], expedListPeopleOrig[person])
 
 def updateGratTexts(site):
     global expedListGrats
@@ -292,15 +301,19 @@ def updateGratTexts(site):
     grat_hash = getGratList(site)
     for grat in grat_hash.keys():
       if(len(grat) > 0):
+        if (expedListGrats[grat] == expedListGratsOrig[grat]):
+          print "Page", expedListGrats[grat][2], "has not changed, skipping"
+          continue
+          
         gratExpeds = getExpeditions(site, grat, grat_hash[grat])
         for date in gratExpeds[1].keys():
           matchObj = RE_USERTEXT_COMMENT.search(gratExpeds[1][date])
           if(matchObj != None):
             expedListGrats[grat][1][date] = RE_USERTEXT_COMMENT.sub(matchObj.group(0),expedListGrats[grat][1][date])
-        writeExpedListPerson(site, expedListGrats[grat])
+        writeExpedListPerson(site, expedListGrats[grat], expedListGratsOrig[grat])
 
 #Write the expedition list for a specific person or graticule
-def writeExpedListPerson(site, expedList):
+def writeExpedListPerson(site, expedList, expedListOrig):
     page = pywikibot.Page(site, expedList[2])
     if(not page.exists()):
       page_text = u"<!--EXPLIST-->" + u"\n<!--EXPLIST-->"
@@ -338,7 +351,9 @@ def writeExpedListPerson(site, expedList):
 # Define the main function
 def main():
     global expedListPeople
+    global expedListPeopleOrig
     global expedListGrats
+    global expedListGratsOrig
 #    wikipedia.verbose = 1
     titleOfPageToLoad = u'2009-06-14_49_-122' # The "u" before the title means Unicode, important for special characters
 #    pywikibot.put_throttle.setDelay(5, absolute = True)
@@ -349,9 +364,7 @@ def main():
 #    os.unlink("graticules.sqlite")
 
 #    db = GraticuleDatabase.GraticuleDatabase()
-    print "Before grat db"
     db = GraticuleDatabase.GraticuleDatabase("graticules.sqlite")
-    print "After grat db"
     all = db.getAllKeys()
 
     # catdb = Category.CategoryDatabase()
@@ -364,6 +377,10 @@ def main():
 
     expedListPeople = parseExpedLists(enwiktsite)
     expedListGrats = parseExpedListsGrats(enwiktsite)
+
+    # Save off the original pages so we can only update exped lists if they've changed
+    expedListPeopleOrig = copy.deepcopy(expedListPeople)
+    expedListGratsOrig = copy.deepcopy(expedListGrats)
 
     all_text = u""
     first_date_obj = get_last_day_avail(datetime.date.today() + datetime.timedelta(7))
