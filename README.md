@@ -20,4 +20,5 @@
 	* `python pwb.py /path/to/pygeohashing/aperfectbot.py`
 1. Start up a cron job to run the bot automatically
 	* Here's the one I used forever:
+
 ```* * * * * cd /path/to/pywikibot; if [ ! -e aperfectbot.lock ]; then date > aperfectbot.lock; python pwb.py /path/to/pygeohashing/aperfectbot.py >output.txt 2>&1 ; rm aperfectbot.lock; fi```
