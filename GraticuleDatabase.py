@@ -74,6 +74,8 @@ class GraticuleDatabase:
       text = page.get(get_redirect = False)
       
       result = re_grat.findall(text)
+      num_results = len(result)
+      cur_match = 0
       for match in result:
         page, grat = match
         lat, lon = grat.split(", ")
@@ -87,6 +89,8 @@ class GraticuleDatabase:
         else:
           name = page
           country = None
+        cur_match = cur_match + 1
+        print "Adding Graticule",cur_match,"of",num_results,":",page
         self.addGraticule( lat, lon, page, name, country )
 
     def __init__(self, filename = None):
