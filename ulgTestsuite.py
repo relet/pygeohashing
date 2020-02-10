@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os, wikipedia, string
+import os
+import pywikibot
+import string
 from UserListGenerator import *
 import re
 
 library = os.listdir("tests")
 
-site = wikipedia.getSite()
+site = pywikibot.getSite()
 
 RE_LINKS = re.compile("\s*((?:\[\[.+?\]\])|(?:[^,[]+))\s*,?")
 
@@ -23,7 +25,11 @@ for test in library:
   report       = filp.read()
   correct_parts = [x.lower().strip() for x in participants.split(",") if len(x.strip())>0]
   correct_links = [x.strip() for x in RE_LINKS.findall(links) if len(x.strip())>0]
-  result_parts = identifyParticipants(report, wikipedia.Page(site, test), None) #we might have to connect to the wiki to get the history / what-links-here
+  try:
+    result_parts = identifyParticipants(report, pywikibot.Page(site, test), None) #we might have to connect to the wiki to get the history / what-links-here
+  except:
+    print "Skipping test",test,"because it doesn't exist"
+    continue
   result_parts = map(string.lower, result_parts)  
 
   parts_debug = getDebugFuzz()
@@ -52,7 +58,7 @@ for test in library:
   if failed:
     any_failed = True
 
-  result_links = identifyParticipants(report, wikipedia.Page(site, test), True) #we might have to connect to the wiki to get the history / what-links-here
+  result_links = identifyParticipants(report, pywikibot.Page(site, test), True) #we might have to connect to the wiki to get the history / what-links-here
   #We want caps-specific results for links
 
   failed = False
