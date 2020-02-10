@@ -48,10 +48,14 @@ def check_banana(site):
 
 #A macro for writing pages out    
 def page_write(page, text, site):
-    old_text = page.get()
-    if (text == old_text):
-        print "Page",page.title(),"has not changed, skipping"
+    try:
+      old_text = page.get()
+    except:
+      page.put(text, u"Ook.")
     else:
+      if (text == old_text):
+        print "Page",page.title(),"has not changed, skipping"
+      else:
         page.put(text, u"Ook.")
 
 #Write a date page if it doesn't already exist.
