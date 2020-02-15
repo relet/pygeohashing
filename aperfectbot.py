@@ -13,6 +13,7 @@ import Expedition, ExpeditionSummaries
 import os
 import copy
 import traceback
+import codecs
 
 #ccodes  = {}
 #for line in open("countryCodes.txt","r"):
@@ -502,6 +503,9 @@ if __name__ == '__main__':
         re_grat = re.compile('\[\[(.*?)\| *([0-9\-]+, *[0-9\-]+) *\(.*?\) *\]\]')
         re_maprough  = '\{\{[gG]raticule\s[^\}]*?map lat="?\+?%s"?lon="?\+?%s"?[^\}]*?\}\}'
         re_noedit = re.compile('\{\{[mM]aintained[^\}]*\}\}')
+
+        UTF8Writer = codecs.getwriter('utf8')
+        sys.stdout = UTF8Writer(sys.stdout)
 
         main()
     finally:
