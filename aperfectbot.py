@@ -12,6 +12,7 @@ from UserListGenerator import *
 import Expedition, ExpeditionSummaries
 import os
 import copy
+import traceback
 
 #ccodes  = {}
 #for line in open("countryCodes.txt","r"):
@@ -294,7 +295,7 @@ def updateUserTexts(site):
         personExpeds = getExpeditions(site, person, people_hash[person])
         for date in personExpeds[1].keys():
           matchObj = RE_USERTEXT_COMMENT.search(personExpeds[1][date])
-          if(matchObj != None):
+          if ((matchObj != None) and (date in expedListPeople[person][1].keys())):
             expedListPeople[person][1][date] = RE_USERTEXT_COMMENT.sub(matchObj.group(0),expedListPeople[person][1][date])
         writeExpedListPerson(site, expedListPeople[person], expedListPeopleOrig[person])
 
@@ -390,52 +391,65 @@ def main():
     first_date_obj = get_last_day_avail(datetime.date.today() + datetime.timedelta(7))
     last_date_obj = first_date_obj
     cur_dates = []
-    for i in range(0,3):
-        while (first_date_obj > datetime.date.today()):
+    plan_dates = []
+    old_date_list = []
+    try:
+        for i in range(0,3):
+            while (first_date_obj > datetime.date.today()):
+                cur_dates.append(first_date_obj.isoformat())
+                expedSums = ExpeditionSummaries.ExpeditionSummaries(enwiktsite, first_date_obj.isoformat(), db)
+                expedListPeople = updateExpedLists(expedSums, expedListPeople, first_date_obj.isoformat())
+                expedListGrats = updateExpedListsGrats(expedSums, expedListGrats, first_date_obj.isoformat())
+                first_date_obj = first_date_obj - datetime.timedelta(1)
+
             cur_dates.append(first_date_obj.isoformat())
             expedSums = ExpeditionSummaries.ExpeditionSummaries(enwiktsite, first_date_obj.isoformat(), db)
             expedListPeople = updateExpedLists(expedSums, expedListPeople, first_date_obj.isoformat())
             expedListGrats = updateExpedListsGrats(expedSums, expedListGrats, first_date_obj.isoformat())
             first_date_obj = first_date_obj - datetime.timedelta(1)
+
+            while (first_date_obj.weekday() > 4):
+                cur_dates.append(first_date_obj.isoformat())
+                expedSums = ExpeditionSummaries.ExpeditionSummaries(enwiktsite, first_date_obj.isoformat(), db)
+                expedListPeople = updateExpedLists(expedSums, expedListPeople, first_date_obj.isoformat())
+                expedListGrats = updateExpedListsGrats(expedSums, expedListGrats, first_date_obj.isoformat())
+                first_date_obj = first_date_obj - datetime.timedelta(1)
 
         cur_dates.append(first_date_obj.isoformat())
         expedSums = ExpeditionSummaries.ExpeditionSummaries(enwiktsite, first_date_obj.isoformat(), db)
         expedListPeople = updateExpedLists(expedSums, expedListPeople, first_date_obj.isoformat())
         expedListGrats = updateExpedListsGrats(expedSums, expedListGrats, first_date_obj.isoformat())
-        first_date_obj = first_date_obj - datetime.timedelta(1)
+        first_date = first_date_obj.isoformat()
 
-        while (first_date_obj.weekday() > 4):
-            cur_dates.append(first_date_obj.isoformat())
-            expedSums = ExpeditionSummaries.ExpeditionSummaries(enwiktsite, first_date_obj.isoformat(), db)
-            expedListPeople = updateExpedLists(expedSums, expedListPeople, first_date_obj.isoformat())
-            expedListGrats = updateExpedListsGrats(expedSums, expedListGrats, first_date_obj.isoformat())
-            first_date_obj = first_date_obj - datetime.timedelta(1)
-
-    cur_dates.append(first_date_obj.isoformat())
-    expedSums = ExpeditionSummaries.ExpeditionSummaries(enwiktsite, first_date_obj.isoformat(), db)
-    expedListPeople = updateExpedLists(expedSums, expedListPeople, first_date_obj.isoformat())
-    expedListGrats = updateExpedListsGrats(expedSums, expedListGrats, first_date_obj.isoformat())
-    first_date = first_date_obj.isoformat()
-
-    remove_dates(enwiktsite, cur_dates)
+        remove_dates(enwiktsite, cur_dates)
 
 #Get a list of old date pages to update
-    old_date_list = get_old_dates(enwiktsite, db)
+        old_date_list = get_old_dates(enwiktsite, db)
 
 #This looks at the pages in [[Category:Expedition planning]]
 #  and produces the summaries for all the pages for far in the future
-    plan_dates = getExpeditionSummaries(pp_list2, db, None, (last_date_obj+datetime.timedelta(1)).isoformat())
-    for i in plan_dates.keys():
-        cur_dates.append(i)
+        plan_dates = getExpeditionSummaries(pp_list2, db, None, (last_date_obj+datetime.timedelta(1)).isoformat())
+        for i in plan_dates.keys():
+            cur_dates.append(i)
 
-    if check_banana(enwiktsite) != 0:
-        return 1
+        if check_banana(enwiktsite) != 0:
+            return 1
 
-    updateUserTexts(enwiktsite)
-    updateGratTexts(enwiktsite)
+        updateUserTexts(enwiktsite)
+        updateGratTexts(enwiktsite)
+    except Exception:
 
-    print "cur_dates: ",cur_dates
-    print "plan_dates: ",plan_dates
+        print "cur_dates: ",cur_dates
+        print "plan_dates: ",plan_dates
+        print "old_dates: ",old_date_list
+        bug_page = pywikibot.Page(enwiktsite, u"User:AperfectBot/BotBugs")
+        bug_page_text = bug_page.get()
+        bug_page_text = bug_page_text + u"\n== NEW REPORT ==\nDates:\n" + str(cur_dates) + str(plan_dates) + str(old_date_list) + u"\n"
+
+        print bug_page_text
+        page_write(bug_page, bug_page_text, enwiktsite)
+        traceback.print_exc(file=sys.stdout)
+
 #Create the [[Template:Expedition_summaries/YYYY-MM-DD]] pages for planning page dates
     putExpeditionSummaries(plan_dates, enwiktsite)
 
