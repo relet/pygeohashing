@@ -6,7 +6,7 @@ import re, string
 import GraticuleDatabase
 from pywikibot import Category
 import sys, datetime
-import hashlib, struct, urllib
+import hashlib, struct, urllib2
 import time
 from UserListGenerator import *
 import Expedition, ExpeditionSummaries
@@ -27,9 +27,16 @@ RE_EXPLIST_COMMENT = re.compile('\<\!\-\-EXPLIST\-\-\>(.*)\<\!\-\-EXPLIST\-\-\>'
 # You must pass a date after the last available one
 def get_last_day_avail(date):
     #djia = urllib.urlopen((date - datetime.timedelta(1)).strftime("http://carabiner.peeron.com/xkcd/map/data/%Y/%m/%d")).read()
-    djia = urllib.urlopen((date - datetime.timedelta(1)).strftime("http://geo.crox.net/djia/%Y/%m/%d")).read()
-    if djia.find('404 Not Found') >= 0:
-        date = get_last_day_avail(date - datetime.timedelta(1))
+    print "Fetching DJIA from url " + (date - datetime.timedelta(1)).strftime("http://geo.crox.net/djia/%Y/%m/%d")
+    try:
+        djia = urllib2.urlopen(url=(date - datetime.timedelta(1)).strftime("http://geo.crox.net/djia/%Y/%m/%d"), timeout=30).read()
+    except urllib2.HTTPError as e:
+        if e.code == 404:
+            date = get_last_day_avail(date - datetime.timedelta(1))
+            return date
+        print e
+        raise
+
     return date
 
 #Split the page title up on spaces/underscores
