@@ -19,10 +19,10 @@ class ExpeditionSummaries:
     allSummaries = []
     for page in self.pageList:
       if(re.match("\d{4}-\d{2}-\d{2} [-0-9]{1,4} [-0-9]{1,4}$", page.title())):
-        print "Parsing page",self.pageList.index(page),"of",len(self.pageList),":",page.title()
+        pywikibot.output("Parsing page " + str(self.pageList.index(page)) + " of " + str(len(self.pageList)) + " : " + page.title())
         exped = Expedition.Expedition(page.site, page.title(), db)
         self.expedList.append(exped)
-#        print exped.subFormat()
+#        pywikibot.output(str(exped.subFormat()))
         allSummaries.append(exped.getExpeditionSummary())
         
 
@@ -33,14 +33,14 @@ class ExpeditionSummaries:
 
   def _pageWrite(self, page, text):
     if(self._checkBanana() == 0):
-#      print "Would put page with",text
+#      pywikibot.output("Would put page with " + text)
       try:
         old_text = page.get()
       except:
         page.put(text, u"Ook.")
       else:
         if (text == old_text):
-          print "Page",page.title(),"has not changed, skipping"
+          pywikibot.output("Page " + page.title() + " has not changed, skipping")
         else:
           page.put(text, u"Ook.")
     

@@ -94,7 +94,7 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
   global debug_fuzz
   global debug_links
   
-  #print "===",page,"==="
+  #pywikibot.output("===" + page + "===")
   fuzzy = {} #user id -> probability of being a participant
 
   text = RE_HTMLCOMMENT.sub("",origtext)
@@ -105,15 +105,15 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
   usernames  = {}
 
   if "[[Category:Not reached - Did not attempt]]" in text:
-    print "Ignoring participants because expedition wasn't attempted"
+    pywikibot.output("Ignoring participants because expedition wasn't attempted")
     return []
 
   if "[[Category:Tagged for deletion]]" in text:
-    print "Ignoring participants because expedition page is marked for deletion"
+    pywikibot.output("Ignoring participants because expedition page is marked for deletion")
     return []
 
   if len(re.findall("\{\{\s*delete", text)) > 0:
-    print "Ignoring participants because expedition page is marked for deletion"
+    pywikibot.output("Ignoring participants because expedition page is marked for deletion")
     return []
 
   scoring = [
@@ -253,8 +253,8 @@ def getSections(text, subSects = None):
       minlen = 99
       for line in split_text:
          match = re.match("\s*=+", line)
-         if ((match != None) and (len(string.strip(match.group(0))) < minlen)):
-            minlen = len(string.strip(match.group(0)))
+         if ((match != None) and (len(match.group(0).strip()) < minlen)):
+            minlen = len(match.group(0).strip())
       equal_str = u""  
       for i in range(0,minlen):
          equal_str += u"="
@@ -264,18 +264,18 @@ def getSections(text, subSects = None):
 
    text_arr = re.split(regex_text, text)
    for i in range(0,len(text_arr)):
-       text_arr[i] = string.strip(text_arr[i])
+       text_arr[i] = text_arr[i].strip()
 
    section_hash = {}
    section_hash[""] = text_arr[0]
 
    for i in range(1,len(text_arr),2):
-     title = string.lower(text_arr[i])
+     title = text_arr[i].lower()
      section_hash[title] = section_hash.get(title,"") + text_arr[i+1]
 
 #   for i in section_hash.keys():
-#      print i + ":",
-#      print ":" + section_hash[i]
+#      pywikibot.output(str(i) + ":")
+#      pywikibot.output(":" + section_hash[i])
 
    return section_hash
 

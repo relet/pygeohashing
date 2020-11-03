@@ -35,7 +35,7 @@ RE_USERTEXT = re.compile('USERTEXT')
 RE_REACHED2 = re.compile('REACHED.*?REACHED')
 RE_PEOPLE_COUNT2 = re.compile('PEOPLE.:(\d+)')
 RE_LISTLEN = re.compile('LISTLEN:(-?\d+)')
-RE_LISTLEN2 = re.compile('LISTLEN.:.?(-?\d+)')
+RE_LISTLEN2 = re.compile('LISTLEN:(.-)?\d+')
 
 RE_APECOMMENT = re.compile("\<\!\-\-APE (.*?)\-\-\>")
 
@@ -182,7 +182,7 @@ class Expedition:
     while((resTextLen < 75) and (len(locationText) > 0) and (iterLen != resTextLen)):
         iterLen = resTextLen
         matchObj = re.match("^([^[]*?)(http:|\[|$)", locationText)
-	if(matchObj != None):
+        if(matchObj != None):
             locationText = locationText[len(matchObj.group(1)):len(locationText)]
         if((matchObj != None) and (len(matchObj.group(1)) != 0)):
             resText += matchObj.group(1)[0:min(len(matchObj.group(1)),75-resTextLen)]

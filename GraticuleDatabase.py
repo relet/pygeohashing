@@ -4,6 +4,7 @@
 import re, sys
 import pywikibot
 import sqlite3
+import functools
 
 re_grat = re.compile('\[\[(.*?)\| *([0-9\-]+, *[0-9\-]+) *\(.*?\) *\]\]')
 
@@ -42,11 +43,11 @@ class GraticuleDatabase:
     def addGraticule(self, lat, lon, page, name, country):
       iswater = lat+","+lon in name
       if not page:
-	page = ""
+        page = ""
       if not name:
-	name = ""
+        name = ""
       if not country:
-	country = ""
+        country = ""
       ex_string = 'insert or replace into graticules values ("' + lat + '","' + lon + '","'
       try:
         ex_string += page.decode("utf-8")
@@ -64,9 +65,9 @@ class GraticuleDatabase:
         ex_string += country
       ex_string += '","'
       if iswater:
-	ex_string += "TRUE\")"
+        ex_string += "TRUE\")"
       else:
-	ex_string += "FALSE\")"
+        ex_string += "FALSE\")"
       self.cur.execute(ex_string) #encode to utf-8 here?
       self.db.commit()
 
@@ -81,7 +82,7 @@ class GraticuleDatabase:
         lat, lon = grat.split(", ")
         if grat in page:
           name = page
-          country = reduce(lambda x,y:x+" "+y, page.split(" ")[0:-2])
+          country = functools.reduce(lambda x,y:x+" "+y, page.split(" ")[0:-2])
         elif "," in page:
           cut = page.split(", ")
           name = cut[0]
@@ -90,7 +91,7 @@ class GraticuleDatabase:
           name = page
           country = None
         cur_match = cur_match + 1
-        print "Adding Graticule",cur_match,"of",num_results,":",page
+        pywikibot.output("Adding Graticule " + str(cur_match) + " of " + str(num_results) + " : " + page)
         self.addGraticule( lat, lon, page, name, country )
 
     def __init__(self, filename = None):
@@ -120,7 +121,7 @@ class GraticuleDatabase:
 
     def getLatLon(self, lat, lon, unknownIsNumeric = False):
       try:
-	execute_text = 'select page, name, country from graticules where lat = \'' + lat + "' and lon = '" + lon + "'" 
+        execute_text = 'select page, name, country from graticules where lat = \'' + lat + "' and lon = '" + lon + "'" 
         self.cur.execute(execute_text)
         page, name, country = self.cur.fetchone()
         return (page, name, country)
