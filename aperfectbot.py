@@ -161,8 +161,8 @@ def getExpeditionSummaries(expPages, db, dates, firstDate):
         if(re.match("\d{4}-\d{2}-\d{2} [-0-9]{1,4} [-0-9]{1,4}$", page.title())):
             pageNameParts = re.split("[ _]+", page.title())
             if (firstDate == None) or (pageNameParts[0] >= firstDate):
-                pywikibot.output("Parsing page " + expPages.index(page) + " of " + len(expPages) + " : " + page.title())
-                exped = Expedition.Expedition(page.site(), page.title(), db)
+                pywikibot.output("Parsing page : " + page.title())
+                exped = Expedition.Expedition(page.site, page.title(), db)
                 if not exped.getDate() in allSummaries:
                     allSummaries[exped.getDate()] = []
 
