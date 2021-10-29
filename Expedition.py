@@ -67,12 +67,24 @@ class Expedition:
     self.page = pywikibot.Page(site, self.pageName)
     pageNameParts = re.split("[ _]+", self.pageName)
     self.date = pageNameParts[0]
-    self.lat = pageNameParts[1]
-    self.lon = pageNameParts[2]
-    self.gratAdd = self.lat+" "+self.lon
+    graticule = pageNameParts[1:3] # either ["global"] or ["lat", "lon"]
+    self.gratAdd = u" ".join(graticule)
+    self.gratAddr = u",".join(graticule)
+    isGlobalhash = pageNameParts[1] == "global"
+    
+    if isGlobalhash:
+      self.lat = None
+      self.lon = None
+    else:
+      self.lat = pageNameParts[1]
+      self.lon = pageNameParts[2]
+    
     name_list = db.getLatLon(self.lat,self.lon)
     if((name_list == None) or (name_list[1] == None) or (name_list[2] == None)):
-      self.gratName = u"Unknown (" + self.lat + u", " + self.lon + u")"
+      if isGlobalhash:
+        self.gratName = u"Globalhash"
+      else:
+        self.gratName = u"Unknown (" + self.lat + u", " + self.lon + u")"
     else:
       self.gratName = name_list[1] + u", " + name_list[2]
     if self.page.isRedirectPage():
@@ -222,7 +234,7 @@ class Expedition:
 
   def subFormat(self, format = None, user = None, oldText = None, grat = None):
     if grat:
-        grat_addr = self.lat + "," + self.lon
+        grat_addr = self.gratAddr
         if grat_addr != grat:
             return None
     userFound = False
@@ -279,4 +291,3 @@ class Expedition:
       formatted_out = rex.sub(sub, formatted_out)
     self.people_temp = None
     return formatted_out
-
