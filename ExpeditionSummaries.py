@@ -18,7 +18,7 @@ class ExpeditionSummaries:
   def _putExpeditionSummaries(self, db):
     allSummaries = []
     for page in self.pageList:
-      if(re.match("\d{4}-\d{2}-\d{2} [-0-9]{1,4} [-0-9]{1,4}$", page.title())):
+      if(re.match("\d{4}-\d{2}-\d{2} ([-0-9]{1,4} [-0-9]{1,4}|global)$", page.title())):
         pywikibot.output("Parsing page " + str(self.pageList.index(page)) + " of " + str(len(self.pageList)) + " : " + page.title())
         exped = Expedition.Expedition(page.site, page.title(), db)
         self.expedList.append(exped)
