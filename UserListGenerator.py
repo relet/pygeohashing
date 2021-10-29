@@ -161,6 +161,8 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
           else:
             fuzzy[partls]=fuzzy.get(partls,0) + score
             usernames[partls] = part.strip()
+            if partls not in userlinks:
+              userlinks[partls] = part.strip()
   
   #increase the score of a potential participant by the number of mentions vs total mentions 
   mentions = {}
