@@ -57,6 +57,7 @@ RE_TRAIN = re.compile("train", re.IGNORECASE)
 RE_WALK = re.compile("walk(ed)?", re.IGNORECASE)
 RE_STRIPCAT = re.compile("Category:")
 RE_CATNOTREACH = re.compile("Category:Not reached - ")
+RE_MEETUP_IN_LAT_LON = re.compile("Category:Meetup in -?\d{1,2} -?\d{1,3}")
 
 class Expedition:
   '''
@@ -71,22 +72,7 @@ class Expedition:
     self.gratAdd = u" ".join(graticule)
     self.gratAddr = u",".join(graticule)
     isGlobalhash = pageNameParts[1] == "global"
-    
-    if isGlobalhash:
-      self.lat = None
-      self.lon = None
-    else:
-      self.lat = pageNameParts[1]
-      self.lon = pageNameParts[2]
-    
-    name_list = db.getLatLon(self.lat,self.lon)
-    if((name_list == None) or (name_list[1] == None) or (name_list[2] == None)):
-      if isGlobalhash:
-        self.gratName = u"Globalhash"
-      else:
-        self.gratName = u"Unknown (" + self.lat + u", " + self.lon + u")"
-    else:
-      self.gratName = name_list[1] + u", " + name_list[2]
+
     if self.page.isRedirectPage():
       self.text = u""
       self.people = None
@@ -95,6 +81,30 @@ class Expedition:
       self.text = self.page.get()
       self.people = identifyParticipants(self.text, self.page, getLinks = True)
       self.categories = self.page.categories()
+
+    if isGlobalhash:
+      meetup_in_categories = [
+        category.title() for category in self.categories
+        if RE_MEETUP_IN_LAT_LON.match(category.title())
+      ]
+      if len(meetup_in_categories) > 0:
+        lat, lon = meetup_in_categories[0].split(" ")[2:4]
+        self.gratAddr = ",".join([lat, lon])
+      # lat and lon need to stay None for globalhashes to set gratName to Globalhash
+      self.lat = None
+      self.lon = None
+    else:
+      self.lat = pageNameParts[1]
+      self.lon = pageNameParts[2]
+
+    name_list = db.getLatLon(self.lat,self.lon)
+    if((name_list == None) or (name_list[1] == None) or (name_list[2] == None)):
+      if isGlobalhash:
+        self.gratName = u"Globalhash"
+      else:
+        self.gratName = u"Unknown (" + self.lat + u", " + self.lon + u")"
+    else:
+      self.gratName = name_list[1] + u", " + name_list[2]
 
     if self.people:
       self.peopleText = ", ".join(self.people)
