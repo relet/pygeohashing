@@ -508,7 +508,7 @@ def main():
 
 def get_all_category_pages(site, title, catdb):
     cat = category.catlib.Category(site, title)
-    article_list = cat.articlesList()
+    article_list = list(cat.articles())
     return article_list
 
 if __name__ == '__main__':

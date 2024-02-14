@@ -9,7 +9,7 @@ import re
 
 library = os.listdir("tests")
 
-site = pywikibot.getSite()
+site = pywikibot.Site()
 
 RE_LINKS = re.compile("\s*((?:\[\[.+?\]\])|(?:[^,[]+))\s*,?")
 
