@@ -90,7 +90,7 @@ if not data:
   for location in locations:
     if "50 -1" in str(location):
       continue
-    pages = location.articlesList()
+    pages = list(location.articles())
     for page in pages:
       title = page.title()
       if not RE_EXP.match(title):

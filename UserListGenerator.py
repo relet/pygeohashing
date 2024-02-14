@@ -188,9 +188,9 @@ def identifyParticipants(origtext, page, getLinks = False, getSections = True):
       return identifyParticipants(origtext, page, getLinks, getSections = False)
 
   if len(fuzzy)==0: #only if we still don't have fuzz
-    history = page.getVersionHistory(getAll=True)
+    history = page.revisions()
     #compare the edit history with the page content
-    editors = [change[2] for change in history]
+    editors = [change.user for change in history]
     for editor in editors:
       if editor.lower() in text.lower():
         fuzzy[editor]=0.5

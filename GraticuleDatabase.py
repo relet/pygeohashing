@@ -98,7 +98,7 @@ class GraticuleDatabase:
       if filename:
         self.load(filename)
       else:
-        site = pywikibot.getSite()
+        site = pywikibot.Site()
         self.load("graticules.sqlite")
         self.parseGraticulePage(pywikibot.Page(site, u"All graticules/Eurasia"))
         self.parseGraticulePage(pywikibot.Page(site, u"All graticules/Australasia"))
