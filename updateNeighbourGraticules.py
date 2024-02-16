@@ -11,13 +11,13 @@ Syntax: python updateNeighbourGrats.py [lazy]
 # (C) Thomas Hirsch 2008-2009 - MIT License
 #
 import re, sys, os
-import wikipedia
+import pywikibot, wikipedia
 from GraticuleDatabase import GraticuleDatabase, inc, dec, grow
 
 re_maprough  = '\{\{[gG]raticule[^\}]*lat= ?\+?%s?[^\}]*lon= ?\+?%s?[^\}]*?\}\}'
 re_noedit = re.compile('\{\{[mM]aintained[^\}]*\}\}')
 
-site = wikipedia.getSite()
+site = pywikibot.Site()
 
 lazy = len(sys.argv)>1 and (sys.argv[1]=="lazy")
 
@@ -48,7 +48,7 @@ for grat in all:
       page = wikipedia.Page(site, data[0])
       while page.isRedirectPage():
         page = page.getRedirectTarget()
-        print data[0],"redirected to",page
+        print(data[0],"redirected to",page)
       text = page.get()
     except:
       pass

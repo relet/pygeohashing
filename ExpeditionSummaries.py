@@ -85,5 +85,5 @@ class ExpeditionSummaries:
     self._pageWrite(page, pageText)
 
     cat = Category(self.site, "Meetup on " + self.date)
-    articleList = cat.articlesList()
+    articleList = list(cat.articles())
     return articleList
