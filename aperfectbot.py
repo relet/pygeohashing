@@ -22,7 +22,7 @@ import codecs
 
 # site = wikipedia.getSite()
 
-RE_EXPLIST_COMMENT = re.compile('\<\!\-\-EXPLIST\-\-\>(.*)\<\!\-\-EXPLIST\-\-\>', re.DOTALL)
+RE_EXPLIST_COMMENT = re.compile(r'\<\!\-\-EXPLIST\-\-\>(.*)\<\!\-\-EXPLIST\-\-\>', re.DOTALL)
 
 # You must pass a date after the last available one
 def get_last_day_avail(date):
@@ -46,7 +46,7 @@ def check_banana(site):
     check_text = check_page.get(True)
     check_arr = re.split("\n", check_text)
     check_text = u" ".join(check_arr)
-    check_regex = re.search("==Distraction Banana==\s*(.*?)\s*$", check_text, re.S)
+    check_regex = re.search(r"==Distraction Banana==\s*(.*?)\s*$", check_text, re.S)
     if(len(check_regex.group(1)) == 0):
         return 0
     else:
@@ -92,9 +92,9 @@ def get_old_dates(site, db):
     page = pywikibot.Page(site, u"User:AperfectBot/Update_requests")
     all_text = page.get()
 
-    matches = re.findall("(''')?(\d{4}-\d{2}-\d{2})(''')?", all_text)
+    matches = re.findall(r"(''')?(\d{4}-\d{2}-\d{2})(''')?", all_text)
 
-    all_text = re.sub("(''')?(\d{4}-\d{2}-\d{2})(''')?", "'''\g<2>'''", all_text, 3)
+    all_text = re.sub(r"(''')?(\d{4}-\d{2}-\d{2})(''')?", r"'''\g<2>'''", all_text, 3)
 
     match_list = []
     for i in range(0, min(len(matches), 3)):
@@ -106,8 +106,8 @@ def get_old_dates(site, db):
     fh = open("aperfectbot_updates.txt", "r")
     all_text = fh.read()
 
-    matches = re.findall("(''')?(\d{4}-\d{2}-\d{2})(''')?", all_text)
-    all_text = re.sub("(''')?(\d{4}-\d{2}-\d{2})(''')?", "'''\g<2>'''", all_text, 3)
+    matches = re.findall(r"(''')?(\d{4}-\d{2}-\d{2})(''')?", all_text)
+    all_text = re.sub(r"(''')?(\d{4}-\d{2}-\d{2})(''')?", r"'''\g<2>'''", all_text, 3)
     match_list2 = []
     for i in range(0, min(len(matches), 3)):
         match_list.append(matches[i][1])
@@ -158,7 +158,7 @@ def getExpeditionSummaries(expPages, db, dates, firstDate):
         for date in dates:
             allSummaries[date] = []
     for page in expPages:
-        if(re.match("\d{4}-\d{2}-\d{2} ([-0-9]{1,4} [-0-9]{1,4}|global)$", page.title())):
+        if(re.match(r"\d{4}-\d{2}-\d{2} ([-0-9]{1,4} [-0-9]{1,4}|global)$", page.title())):
             pageNameParts = re.split("[ _]+", page.title())
             if (firstDate == None) or (pageNameParts[0] >= firstDate):
                 pywikibot.output("Parsing page : " + page.title())
@@ -472,7 +472,7 @@ def main():
 
     recent_exp_page = pywikibot.Page(enwiktsite, recent_expedition_page_name)
     recent_exp_text = recent_exp_page.get()
-    recent_exp_res = re.findall("=== \[\[(\d{4}-\d{2}-\d{2}).*?\]\] ===\n([^=]*)", recent_exp_text, re.S)
+    recent_exp_res = re.findall(r"=== \[\[(\d{4}-\d{2}-\d{2}).*?\]\] ===\n([^=]*)", recent_exp_text, re.S)
 
     recent_exp_hash = {}
     for i in range(0,len(recent_exp_res)):
@@ -513,9 +513,9 @@ def get_all_category_pages(site, title, catdb):
 
 if __name__ == '__main__':
     try:
-        re_grat = re.compile('\[\[(.*?)\| *([0-9\-]+, *[0-9\-]+) *\(.*?\) *\]\]')
-        re_maprough  = '\{\{[gG]raticule\s[^\}]*?map lat="?\+?%s"?lon="?\+?%s"?[^\}]*?\}\}'
-        re_noedit = re.compile('\{\{[mM]aintained[^\}]*\}\}')
+        re_grat = re.compile(r'\[\[(.*?)\| *([0-9\-]+, *[0-9\-]+) *\(.*?\) *\]\]')
+        re_maprough  = r'\{\{[gG]raticule\s[^\}]*?map lat="?\+?%s"?lon="?\+?%s"?[^\}]*?\}\}'
+        re_noedit = re.compile(r'\{\{[mM]aintained[^\}]*\}\}')
 
         UTF8Writer = codecs.getwriter('utf8')
         sys.stdout = UTF8Writer(sys.stdout)
